@@ -1,59 +1,54 @@
-# TODO helper functions for dealing with acclimate output
+# TODO helper functions for dealing with acclimate output datasets
 
-import netCDF4
-
-
-def agent_index(variable, sector=None, region=None, agent_type=None):
+def select_partial_data(data, sector=None, region=None, agent=None):
     """
-    Get indices of agents for the dimensions in `variable`.
+      Get part of dataset selected by the parameters.
 
-    Parameters
-    ----------
-    variable
-        Variable for which the indices are to be used
-    sector
-        None or int or str or iterable of str : Sector(s) of agents to select
-    region
-        None or int or str or iterable of str : Region(s) of agents to select
-    agent_type
-        None or int or str or iterable of str : Type(s) of agents to select
+      Parameters
+      ----------
+      data
+          xarray dataset to select on
+      sector
+          None or int or str or iterable of int : Sector(s) of data to select
+      region
+          None or int or iterable of int : Region(s) of data to select
+      agent
+          None or int or iterable of int : Indizes of agents for which data to select
 
-    Returns
-    -------
-    List[int]
-        List of indices for the selected agents
+      Returns
+      -------
+      xarray.Dataset
+          dataset with the selected subset of input data
+      """
+    if sector is not None:
+        data = data.sel(sector=sector)
+    if region is not None:
+        data = data.sel(region=region)
+    if agent is not None:
+        data = data.sel(agent=agent)
+    return data
+
+
+def select_by_agent_properties(data, acclimate_output, sector=None, region=None, type=None):
     """
+      Get part of dataset selected by the agents fitting the parameters.
+      Parameters
+      ----------
+      data
+          xarray dataset to select on
+      acclimate_output
+        AcclimateOutput for agent properties
+      sector
+          None or int or str or iterable of int : Sector(s) of agents to select
+      region
+          None or int or iterable of int : Region(s) of agents to select
+      type
+          None or int or iterable of int : Type of agents to select
 
-    if sector and agent_type is None:
-        agent_type = "consumer"
-
-    if sector and agent_type == "consumer":
-        raise ValueError("Cannot give sector when selecing consumer agents")
-
-    def remap(v, lookupdict):
-        if v is None:
-            return lookupdict.values()
-        elif isinstance(v, int):
-            return [v]
-        elif isinstance(v, str):
-            return remap(lookupdict[v], lookupdict)
-        else:
-            return [k for i in v for k in remap(i, lookupdict)]
-
-    if isinstance(variable, netCDF4.Variable):
-        # TODO way to cache agents, sectors, region
-        nc = variable.group()
-        agents = nc["agent"]
-        sector = remap(sector, nc["sector"])
-        region = remap(region, nc["region"])
-        agent_type = remap(agent_type, nc["agent_type"])
-    else:
-        sector = remap(sector, variable.sectors)
-        region = remap(region, variable.regions)
-        agent_type = remap(agent_type, variable.agent_types)
-
-    return [
-        i
-        for i, v in enumerate(agents)
-        if v[1] in agent_type and v[2] in sector and v[3] in region
-    ]
+      Returns
+      -------
+      xarray.Dataset
+          dataset with the selected subset of data for the agents with given properties
+      """
+    agents = acclimate_output.agent(type=type, region=region, sector=sector)
+    return data.sel(agent=agents)
