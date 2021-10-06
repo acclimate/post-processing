@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # TODO: built custom wrapper for NetCDF output
 import numpy as np
 import xarray as xr
@@ -73,7 +74,3 @@ def baseline_relative(x):
 
 def time_average(x):
     return x.mean("time")
-
-
-def baseline_average(x):
-    return time_average(baseline_relative(x))
