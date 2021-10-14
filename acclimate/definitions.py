@@ -380,10 +380,58 @@ WORLD_REGIONS = {
 }
 
 # consumption baskets for consumer analysis
-necessary = ["AGRI", "FOOD", "ELWA", "FISH"]
+necessary = ["AGRI", "FOOD", "ELWA", "FISH", "EDHE"]
 relevant = ["OILC", "TRAN", "WOOD", "COMM", "RETT", "TEXL", "METL", "MACH", "TREQ", "MANU", "CONS", "WHOT"]
 other = ["GAST", "MINQ", "REXI", "RECY", "OTHE", "FINC", "HOUS", "ADMI", "REPA"]
 consumption_baskets = {"necessary": necessary, "relevant": relevant, "other": other}
+
+# sector names
+# define maps to map numerical dimensions back to keys
+consumer_names = ["1st", "2nd", "3rd", "4th", "5th"]
+consumer_indizes = range(0, 5)
+
+sector_names = ['AGRI',
+                'FISH',
+                'MINQ',
+                'FOOD',
+                'TEXL',
+                'WOOD',
+                'OILC',
+                'METL',
+                'MACH',
+                'TREQ',
+                'MANU',
+                'RECY',
+                'ELWA',
+                'CONS',
+                'REPA',
+                'WHOT',
+                'RETT',
+                'GAST',
+                'TRAN',
+                'COMM',
+                'FINC',
+                'ADMI',
+                'EDHE',
+                'HOUS',
+                'OTHE',
+                'REXI']
+sector_indizes = range(0, 26)
+
+consumer_index_name_dict = dict(zip(consumer_indizes, consumer_names))
+consumer_name_index_dict = dict(zip(consumer_names, consumer_indizes))
+
+
+def consumer_map(consumer_index):
+    return consumer_index_name_dict[consumer_index]
+
+
+producing_sectors_index_name_dict = dict(zip(sector_indizes, sector_names))
+producing_sectors_name_index_dict = dict(zip(sector_names, sector_indizes))
+
+
+def producing_sector_map(sector_index):
+    return producing_sectors_index_name_dict[sector_index]
 
 
 # colors as in previous publications

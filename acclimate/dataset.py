@@ -24,8 +24,11 @@ class AcclimateOutput:
         # initialize dictionary of xarrays for all groups
         self.xarrays = {}
         for i_group in self.groups:
-            self.xarrays[i_group] = xr.open_dataset(
-                filename, group=i_group)
+            try:
+                self.xarrays[i_group] = xr.open_dataset(
+                    filename, group=i_group, chunks={"time": 75})
+            except:
+                print("data without time dimension not loaded")
 
     def agent(self, sector=None, region=None, type=None):
         def remap(v, lookupdict):

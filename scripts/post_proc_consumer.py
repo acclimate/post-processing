@@ -2,7 +2,9 @@
 import argparse
 import os
 
-from acclimate import dataset
+import xarray as xr
+
+from acclimate import dataset, definitions
 from acclimate import helpers
 
 parser = argparse.ArgumentParser(description="Process acclimate output for easy and fast plotting.")
@@ -24,7 +26,26 @@ parser.add_argument(
 )
 
 
-def baseline_data(data, region, already_relative, agent_type, sectors):
+def aggregate_by_sector_group(data, sector_groups):
+    aggregated_data = []
+    for i_group in sector_groups.keys():
+        sector_indizes = [definitions.producing_sectors_name_index_dict[i_sector] for i_sector in
+                          sector_groups[i_group]]
+        aggregate = data.sel(sector=sector_indizes).sum("sector")
+        aggregated_data.append(aggregate)
+    return xr.concat(aggregated_data, "sector")
+
+
+args = parser.parse_args()
+all_regions = False
+if not args.acclimate_output:
+    args.acclimate_output = os.path.join(os.getcwd(), 'output.nc')
+if not args.outputdir:
+    args.outputdir = os.getcwd()
+output = dataset.AcclimateOutput(args.acclimate_output)
+
+
+def baseline_data(data, region, already_relative, agent_type, sectors=None, output=output):
     region_data = helpers.select_partial_data(
         helpers.select_by_agent_properties(data, output, region=region, type=agent_type),
         sector=sectors)
@@ -34,35 +55,34 @@ def baseline_data(data, region, already_relative, agent_type, sectors):
         return region_data.map(dataset.baseline_relative)
 
 
-# TODO: add data to check, etc.
-
-args = parser.parse_args()
-all_regions = False
-if not args.acclimate_output:
-    args.acclimate_output = os.path.join(os.getcwd(), 'output.nc')
-if not args.outputdir:
-    args.outputdir = os.getcwd()
-output = dataset.AcclimateOutput(args.acclimate_output)
 if not args.regions:
     args.regions = list(output.regions)
     all_regions = True
 storage_data = output.xarrays["storages"]
 firm_data = output.xarrays["firms"]
 consumer_data = output.xarrays["consumers"]
-
+# aggregated storage data to check consumption patterns
+aggregated_storage_data = aggregate_by_sector_group(storage_data, definitions.consumption_baskets)
 production_sectors = range(0, 26)  # ignore consumption sectors
 consumption_sectors = range(26, 31)
+
 if all_regions:
     storage_data = storage_data.map(dataset.baseline_relative)
     firm_data = firm_data.map(dataset.baseline_relative)
     consumer_data = consumer_data.map(dataset.baseline_relative)
+    aggregated_storage_data = aggregated_storage_data.map(dataset.baseline_relative)
+    print("baseline relative data calculated.")
+
+aggregated_storage_data = aggregated_storage_data.persist()
 
 for i_region in args.regions:
+    baseline_data(aggregated_storage_data, i_region, all_regions, "consumer").to_netcdf(
+        os.path.join(args.outputdir, "baseline_relative_consumer_basket_storage_" + i_region + ".nc"))
     baseline_data(storage_data, i_region, all_regions, "consumer", production_sectors).to_netcdf(
         os.path.join(args.outputdir, "baseline_relative_consumer_storage_" + i_region + ".nc"))
-    baseline_data(firm_data, i_region, all_regions, "firm", production_sectors).to_netcdf(
+    baseline_data(firm_data, i_region, all_regions, "firm").to_netcdf(
         os.path.join(args.outputdir, "baseline_relative_firms_" + i_region + ".nc"))
-    baseline_data(consumer_data, i_region, all_regions, "consumer", consumption_sectors).to_netcdf(
+    baseline_data(consumer_data, i_region, all_regions, "consumer").to_netcdf(
         os.path.join(args.outputdir, "baseline_relative_consumers_" + i_region + ".nc"))
 
 # get baseline relative region data
