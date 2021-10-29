@@ -1,4 +1,10 @@
 # TODO helper functions for dealing with acclimate output datasets
+import os
+
+import holoviews as hv
+import xarray as xr
+from acclimate import definitions
+
 
 def select_partial_data(data, sector=None, region=None, agent=None):
     """
@@ -52,3 +58,48 @@ def select_by_agent_properties(data, acclimate_output, sector=None, region=None,
       """
     agents = acclimate_output.agent(type=type, region=region, sector=sector)
     return data.sel(agent=agents)
+
+
+def aggregate_by_sector_group(data, sector_groups):
+    """
+    Aggregates data by given sector groups
+      Parameters
+      ----------
+      data
+        xarray data to be aggregated on the sector dimension
+      sector_groups
+        dictionary with sector group names as keys and sector names as values
+
+      Returns
+      -------
+      xarray.Dataset
+        aggregated data with sector dimension reduced to the given sector groups
+    """
+    aggregated_data = []
+    for i_group in sector_groups.keys():
+        sector_indizes = [definitions.producing_sectors_name_index_dict[i_sector] for i_sector in
+                          sector_groups[i_group]]
+        aggregate = data.sel(sector=sector_indizes).sum("sector")
+        aggregated_data.append(aggregate)
+    return xr.concat(aggregated_data, "sector")
+
+
+# some helpers on data exploration
+
+def clean_vdims_consumption(data, sector_map=definitions.producing_sector_map):
+    data.kdims[0].value_format = definitions.consumer_map
+    data.kdims[0].values = list(range(0, 5))
+    data.kdims[0].label = "income quintile"
+    data.kdims[1].value_format = sector_map
+    data.kdims[1].values = list(range(0, 26))
+    return data
+
+
+def load_region_data(datadir, filename, region, sector_map=definitions.producing_sector_map):
+    data = hv.Dataset(xr.open_dataset(os.path.join(datadir, filename + region + ".nc")))
+    return clean_vdims_consumption(data, sector_map=sector_map)
+
+
+def load_region_basket_data(datadir, filename, region, sector_map=definitions.basket_map):
+    data = hv.Dataset(xr.open_dataset(os.path.join(datadir, filename + region + ".nc")))
+    return clean_vdims_consumption(data, sector_map=sector_map)

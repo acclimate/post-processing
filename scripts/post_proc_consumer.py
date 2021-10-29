@@ -2,8 +2,6 @@
 import argparse
 import os
 
-import xarray as xr
-
 from acclimate import dataset, definitions
 from acclimate import helpers
 
@@ -24,17 +22,6 @@ parser.add_argument(
     nargs='+',
     help="Regions to analyse - if none provided, all regions from output will be used."
 )
-
-
-def aggregate_by_sector_group(data, sector_groups):
-    aggregated_data = []
-    for i_group in sector_groups.keys():
-        sector_indizes = [definitions.producing_sectors_name_index_dict[i_sector] for i_sector in
-                          sector_groups[i_group]]
-        aggregate = data.sel(sector=sector_indizes).sum("sector")
-        aggregated_data.append(aggregate)
-    return xr.concat(aggregated_data, "sector")
-
 
 args = parser.parse_args()
 all_regions = False
@@ -62,7 +49,7 @@ storage_data = output.xarrays["storages"]
 firm_data = output.xarrays["firms"]
 consumer_data = output.xarrays["consumers"]
 # aggregated storage data to check consumption patterns
-aggregated_storage_data = aggregate_by_sector_group(storage_data, definitions.consumption_baskets)
+aggregated_storage_data = helpers.aggregate_by_sector_group(storage_data, definitions.consumption_baskets)
 production_sectors = range(0, 26)  # ignore consumption sectors
 consumption_sectors = range(26, 31)
 
@@ -73,7 +60,11 @@ if all_regions:
     aggregated_storage_data = aggregated_storage_data.map(dataset.baseline_relative)
     print("baseline relative data calculated.")
 
+# calling persist keeps data in memory - speeding up output enourmously, but increasing memory requirement
 aggregated_storage_data = aggregated_storage_data.persist()
+storage_data = storage_data.persist()
+firm_data = firm_data.persist()
+consumer_data = consumer_data.persist()
 
 for i_region in args.regions:
     baseline_data(aggregated_storage_data, i_region, all_regions, "consumer").to_netcdf(
