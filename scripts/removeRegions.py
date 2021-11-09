@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import argparse
 import os
 
@@ -10,7 +11,7 @@ parser.add_argument(
     "--network"
     , type=str,
     required=True,
-    help="Path to the network file (defaul"
+    help="Path to the network file"
 )
 parser.add_argument(
     "--outputdir"
