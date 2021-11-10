@@ -21,12 +21,14 @@ class AcclimateOutput:
         self.agent_types = {
             v: i for i, v in enumerate(self.dataset.variables["agent_type"])
         }
-        # initialize dictionary of xarrays for all groups
+        # initialize dictionary of dask xarrays for all groups
         self.xarrays = {}
         for i_group in self.groups:
             try:
                 self.xarrays[i_group] = xr.open_dataset(
-                    filename, group=i_group, chunks={"time": 75})
+                    filename, group=i_group, chunks={
+                        "time": 40})  # TODO: choose chunk size in some dynamic fashion, but for usual ca. 8000 agents in acclimate with approx. 5 variables we get around 1.6m floats as recommended
+                # https://docs.dask.org/en/latest/array-best-practices.html
             except:
                 print("data without time dimension not loaded")
 

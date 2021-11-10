@@ -3,6 +3,7 @@ import os
 
 import holoviews as hv
 import xarray as xr
+
 from acclimate import definitions
 
 
@@ -79,7 +80,7 @@ def aggregate_by_sector_group(data, sector_groups):
     for i_group in sector_groups.keys():
         sector_indizes = [definitions.producing_sectors_name_index_dict[i_sector] for i_sector in
                           sector_groups[i_group]]
-        aggregate = data.sel(sector=sector_indizes).sum("sector")
+        aggregate = data.sel(sector=sector_indizes).sum("sector", skipna=True)
         aggregated_data.append(aggregate)
     return xr.concat(aggregated_data, "sector")
 
@@ -100,6 +101,5 @@ def load_region_data(datadir, filename, region, sector_map=definitions.producing
     return clean_vdims_consumption(data, sector_map=sector_map)
 
 
-def load_region_basket_data(datadir, filename, region, sector_map=definitions.basket_map):
-    data = hv.Dataset(xr.open_dataset(os.path.join(datadir, filename + region + ".nc")))
-    return clean_vdims_consumption(data, sector_map=sector_map)
+def load_region_basket_data(datadir, filename, region):
+    return load_region_data(datadir, filename, region, sector_map=definitions.basket_map())
