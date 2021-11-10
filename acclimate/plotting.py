@@ -3,8 +3,9 @@ import math
 
 import holoviews as hv
 import param
-from acclimate import definitions
 from holoviews.operation.timeseries import rolling
+
+from acclimate import definitions
 
 golden = (1 + math.sqrt(5)) / 2
 
@@ -18,7 +19,6 @@ class VariableExplorer(param.Parameterized):
         self.variable = param.ObjectSelector(default=variable_names[0], objects=variable_names)
         self.sector = param.ObjectSelector(default=0, objects=definitions.producing_sectors_name_index_dict)
         self.rolling_window = param.Integer(default=1, bounds=(1, 1000))
-
         self.agent = param.ObjectSelector(default=0,
                                           objects=range(0, len(definitions.producing_sectors_name_index_dict)))
 

@@ -2,8 +2,23 @@
 import argparse
 import os
 
+import dask
+from dask_jobqueue import SLURMCluster
+
 from acclimate import dataset, definitions
 from acclimate import helpers
+
+
+# some functions TODO: put into source file after development
+
+
+def regions_consumer_firm(regions):
+    results = []
+    for i_region in args.regions:
+        results.append(baseline_data(aggregated_storage_data, i_region, all_regions, "consumer", baskets=True))
+        results.append(baseline_data(storage_data, i_region, all_regions, "consumer", production_sectors))
+    return results
+
 
 parser = argparse.ArgumentParser(description="Process acclimate output for easy and fast plotting.")
 parser.add_argument(
@@ -29,25 +44,47 @@ if not args.acclimate_output:
     args.acclimate_output = os.path.join(os.getcwd(), 'output.nc')
 if not args.outputdir:
     args.outputdir = os.getcwd()
+
+# experimental use of adaptive dask cluster to speed up operations if capacity is available on the cluster
+# create dask cluster utilitzing dask.jobqueue
+cluster = SLURMCluster(
+    queue='standard',
+    project="compacts",
+    cores=16,
+    memory="60 GiB",
+    walltime="0-00:30:00",
+    extra=["--lifetime", "25m", "--lifetime-stagger", "4m"]
+)
+cluster.adapt(minimum=1, maximum=10)  # ask for max 10 jobs
+
 output = dataset.AcclimateOutput(args.acclimate_output)
 
 
-def baseline_data(data, region, already_relative, agent_type, sectors=None, output=output):
+@dask.delayed
+def baseline_data(data, region, already_relative, agent_type, sectors=None, baskets=False, output=output):
     region_data = helpers.select_partial_data(
         helpers.select_by_agent_properties(data, output, region=region, type=agent_type),
         sector=sectors)
+    filename = "baseline_relative_consumer_storage_" + region + ".nc"
+    if baskets:
+        filename = "baseline_relative_consumer_basket_storage_" + region + ".nc"
     if already_relative:
-        return region_data
+        region_data.to_netcdf(
+            os.path.join(args.outputdir, filename))
+        return filename
     else:
-        return region_data.map(dataset.baseline_relative)
+        region_data.map(dataset.baseline_relative).to_netcdf(
+            os.path.join(args.outputdir, filename))
+        return filename
 
 
 if not args.regions:
     args.regions = list(output.regions)
-    all_regions = True
+    all_regions = False
 storage_data = output.xarrays["storages"]
 firm_data = output.xarrays["firms"]
 consumer_data = output.xarrays["consumers"]
+
 # aggregated storage data to check consumption patterns
 aggregated_storage_data = helpers.aggregate_by_sector_group(storage_data, definitions.consumption_baskets)
 production_sectors = range(0, 26)  # ignore consumption sectors
@@ -66,15 +103,8 @@ storage_data = storage_data.persist()
 firm_data = firm_data.persist()
 consumer_data = consumer_data.persist()
 
-for i_region in args.regions:
-    baseline_data(aggregated_storage_data, i_region, all_regions, "consumer").to_netcdf(
-        os.path.join(args.outputdir, "baseline_relative_consumer_basket_storage_" + i_region + ".nc"))
-    baseline_data(storage_data, i_region, all_regions, "consumer", production_sectors).to_netcdf(
-        os.path.join(args.outputdir, "baseline_relative_consumer_storage_" + i_region + ".nc"))
-    baseline_data(firm_data, i_region, all_regions, "firm").to_netcdf(
-        os.path.join(args.outputdir, "baseline_relative_firms_" + i_region + ".nc"))
-    baseline_data(consumer_data, i_region, all_regions, "consumer").to_netcdf(
-        os.path.join(args.outputdir, "baseline_relative_consumers_" + i_region + ".nc"))
+# experimental use of dask delayed to parallelize
+dask.compute(regions_consumer_firm(args.regions))
 
 # get baseline relative region data
 region_data = output.xarrays["regions"]
