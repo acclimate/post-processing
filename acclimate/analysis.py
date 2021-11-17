@@ -1,7 +1,6 @@
 # TODO helpers for most important quantities
 import xarray as xr
 
-
 def ensemble_data(datalist, ensemblenames=None):
     """
         Combines given data into one dataset with an extra dimension for ensemble members

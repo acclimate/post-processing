@@ -4,8 +4,6 @@ import os
 
 import xarray as xr
 
-from acclimate import definitions
-
 parser = argparse.ArgumentParser(description="remove regions from input network for acclimate.")
 parser.add_argument(
     "--network"
@@ -31,10 +29,11 @@ args = parser.parse_args()
 
 eora_network_path = args.network
 xarray_network = xr.open_dataset(eora_network_path)
-# data poor regions: remove_regions = ["BLR", "MDA", "SDN", "ZWE"]
-remove_regions = list(
-    set(definitions.region_names) - set(definitions.WORLD_REGIONS["USA"]) - set(definitions.WORLD_REGIONS["CHN"]) - set(
-        definitions.WORLD_REGIONS["EU28"]) - set(definitions.WORLD_REGIONS["G20"]))
+# data poor regions:
+remove_regions = ["BLR", "MDA", "SDN", "ZWE", "BFA"]
+# remove_regions = list(
+# set(definitions.region_names) - set(definitions.WORLD_REGIONS["USA"]) - set(definitions.WORLD_REGIONS["CHN"]) - set(
+# definitions.WORLD_REGIONS["EU28"]) - set(definitions.WORLD_REGIONS["G20"]))
 # trying to generate economic "core" of acclimate for faster simulations, TODO: generate ROW agent if promising initial runs
 # get indizes for regions to be removed:
 print("Starting ... Number of regions to be removed: " + str(len(remove_regions)))

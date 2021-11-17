@@ -102,4 +102,4 @@ def load_region_data(datadir, filename, region, sector_map=definitions.producing
 
 
 def load_region_basket_data(datadir, filename, region):
-    return load_region_data(datadir, filename, region, sector_map=definitions.basket_map())
+    return load_region_data(datadir, filename, region, sector_map=definitions.basket_map)

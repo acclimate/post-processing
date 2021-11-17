@@ -40,7 +40,7 @@ class OverlayVariableExplorer(VariableExplorer):
     def load_symbol(self):
         selection = self.dataset.select(sector=self.sector)
         curve = selection.to(hv.Curve, 'time', self.variable, groupby='agent').overlay()
-        curve.opts(hv.opts.Curve(color=hv.Cycle(definitions.agent_colors)))
+        curve.opts(hv.opts.Curve(color=hv.Cycle(definitions.agent_colors), show_legend=False))
         return curve
 
     @param.depends('rolling_window', 'variable', 'sector', 'agent')
