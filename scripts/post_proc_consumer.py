@@ -12,42 +12,44 @@ from acclimate import helpers
 
 # some functions TODO: put into source file after development
 
-def regions_consumer_firm(regions, data, outputdir, output, sectors,
-                          filenamestub="baseline_relative_consumer_storage_"):
+def regionalize_data(regions, data, outputdir, output, sectors=None, agent_type="consumer",
+                     filenamestub="baseline_relative_consumer_storage_"):
     results = []
     for i_region in regions:
-        filtered_data = single_region_data(i_region, data, output, sectors)
+        filtered_data = single_region_data(i_region, data, output, sectors=sectors, agent_type=agent_type)
         baseline_data = baseline_relative(filtered_data)
         results.append(safe_file(baseline_data, filenamestub + i_region + ".nc", outputdir))
     return results
 
 
 @dask.delayed
-def single_region_data(region, data, output, sectors):
+def single_region_data(region, data, output, sectors=None, agent_type="consumer"):
     # filter for groups of regions
     if region in definitions.WORLD_REGIONS.keys():
-        return aggregate_subregions(region, data, output, sectors)
+        return aggregate_subregions(region, data, output, sectors=sectors, agent_type=agent_type)
     else:
-        return select_consumption_storage(region, data, output, sectors)
+        return select_storage(region, data, output, sectors=sectors, agent_type=agent_type)
 
 
-def aggregate_subregions(region_group, data, output, sectors):
-    regions_to_aggregate = list(set(definitions.WORLD_REGIONS[region_group]) - set(["BLR", "MDA", "SDN", "ZWE", "BFA"]))
+def aggregate_subregions(region_group, data, output, sectors=None, agent_type="consumer"):
+    regions_to_aggregate = list(set(definitions.WORLD_REGIONS[region_group]) - set(["BLR", "MDA", "SDN", "ZWE"]))
     aggregated_data = []
     for i_subregion in regions_to_aggregate:
         if i_subregion in definitions.WORLD_REGIONS.keys():
             subdata = aggregate_subregions(i_subregion, data, output,
-                                           sectors)  # recursion to get aggregate of aggregate regions
+                                           sectors=sectors,
+                                           agent_type=agent_type)  # recursion to get aggregate of aggregate regions
         else:
-            subdata = select_consumption_storage(i_subregion, data, output, sectors)
+            subdata = select_storage(i_subregion, data, output, sectors=sectors, agent_type=agent_type)
         aggregated_data.append(subdata)
     aggregate = xr.concat(aggregated_data, "region")
     return aggregate.sum("region", skipna=True)
 
 
-def select_consumption_storage(region, data, output, sectors):
-    return helpers.select_partial_data(helpers.select_by_agent_properties(data, output, type="consumer", region=region),
-                                       sector=sectors)
+def select_storage(region, data, output, sectors=None, agent_type="consumer"):
+    return helpers.select_partial_data(
+        helpers.select_by_agent_properties(data, output, type=agent_type, region=region),
+        sector=sectors)
 
 
 @dask.delayed
@@ -94,10 +96,10 @@ cluster = SLURMCluster(
     job_extra=["--qos standby"],
     queue="priority",
     project="acclimat",
-    cores=1,
-    memory="4 GiB",
-    walltime="0-00:15:00",
-    extra=["--lifetime", "15", "--lifetime-stagger", "1m"]
+    cores=4,
+    memory="16 GiB",
+    walltime="0-00:10:00",
+    extra=["--lifetime", "10", "--lifetime-stagger", "1m"]
 )
 print(cluster.job_script())  # ask for max 10 jobs
 
@@ -115,21 +117,13 @@ if args.regions[0] == "ALL":
     regions_seperate = list(definitions.WORLD_REGIONS.values())
     regions_seperate.append(definitions.WORLD_REGIONS.keys())  # append by aggregation regions
     regions = list(set([i_region for i_list in regions_seperate for i_region in i_list]) - set(
-        ["BLR", "MDA", "SDN", "ZWE", "BFA"]))
+        ["BLR", "MDA", "SDN", "ZWE"]))
     regions.sort()
     args.regions = regions
 
 print(args.regions)
 
 storage_data = output.xarrays["storages"]
-firm_data = output.xarrays["firms"]
-consumer_data = output.xarrays["consumers"]
-
-# # calling persist keeps data in memory - might be speeding up output, but increasing memory requirement
-# aggregated_storage_data = aggregated_storage_data.persist()
-# storage_data = storage_data.persist()
-# firm_data = firm_data.persist()
-# consumer_data = consumer_data.persist()
 
 # experimental use of dask delayed to parallelize
 # aggregated storage data to check consumption patterns
@@ -138,17 +132,32 @@ aggregated_storage_data = dask.delayed(helpers.aggregate_by_sector_group(storage
 storage_data = dask.delayed(storage_data)
 output = dask.delayed(output)
 
-cluster.adapt(minimum=1, maximum=30)  # ask for max 10 jobs
-dask.compute(regions_consumer_firm(args.regions, storage_data, args.outputdir, output,
-                                   list(definitions.producing_sectors_name_index_dict.values())))
-dask.compute(regions_consumer_firm(args.regions, aggregated_storage_data, args.outputdir, output, [0, 1, 2],
-                                   filenamestub="baseline_relative_consumer_basket_storage_"))
+cluster.adapt(minimum=16, maximum=512)  # ask for max 512 cores as limit of standby queue
 
-# # get baseline relative region data
-# region_data = output.xarrays["regions"]
-# baseline_region_data = region_data.map(dataset.baseline_relative)
-# baseline_region_data.to_netcdf(os.path.join(args.outputdir, "baseline_relative_region_data.nc"))
-# # get baseline relative sector data
-# sector_data = output.xarrays["sectors"]
-# baseline_relative_sector_data = sector_data.map(dataset.baseline_relative)
-# baseline_relative_sector_data.to_netcdf(os.path.join(args.outputdir, "baseline_relative_sector_data.nc"))
+print("Crunching numbers for single regions...")
+dask.compute(regionalize_data(args.regions, storage_data, args.outputdir, output,
+                              sectors=list(definitions.producing_sectors_name_index_dict.values())))
+dask.compute(regionalize_data(args.regions, aggregated_storage_data, args.outputdir, output, sectors=[0, 1, 2],
+                              filenamestub="baseline_relative_consumer_basket_storage_"))
+
+# get storage data for other sectors
+dask.compute(regionalize_data(args.regions, storage_data, args.outputdir, output,
+                              sectors=list(definitions.producing_sectors_name_index_dict.values()),
+                              agent_type="firm", filenamestub="baseline_relative_firm_storage_"))
+
+# calculate consumer data
+consumer_data = output.xarrays["consumers"]
+dask.compute(regionalize_data(args.regions, consumer_data, args.outputdir, output,
+                              sectors=None, filenamestub="baseline_relative_consumer_data_"))
+
+# calculate firm data
+firm_data = output.xarrays["firms"]
+dask.compute(regionalize_data(args.regions, firm_data, args.outputdir, output,
+                              sectors=None, filenamestub="baseline_relative_firm_data_"))
+
+# get baseline relative region data
+print("aggregated region statistics are calculated...")
+region_data = output.xarrays["regions"].compute()
+baseline_region_data = region_data.map(dataset.baseline_relative)
+baseline_region_data.to_netcdf(os.path.join(args.outputdir, "baseline_relative_region_data.nc"))
+print("Done.")

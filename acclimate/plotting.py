@@ -10,7 +10,7 @@ from acclimate import definitions
 golden = (1 + math.sqrt(5)) / 2
 
 
-class VariableExplorer(param.Parameterized):
+class StorageVariableExplorer(param.Parameterized):
 
     def __init__(self, dataset):
         super().__init__()
@@ -35,7 +35,7 @@ class VariableExplorer(param.Parameterized):
         return (dmap).opts(aspect=golden)
 
 
-class OverlayVariableExplorer(VariableExplorer):
+class OverlayVariableExplorer(StorageVariableExplorer):
     @param.depends('rolling_window', 'variable', 'sector')
     def load_symbol(self):
         selection = self.dataset.select(sector=self.sector)
@@ -54,7 +54,7 @@ class OverlayVariableExplorer(VariableExplorer):
         return (smoothed).opts(aspect=golden)
 
 
-class DistributionExplorer(VariableExplorer):
+class DistributionExplorer(StorageVariableExplorer):
     @param.depends('rolling_window', 'variable', 'sector')
     def load_symbol(self):
         data = self.dataset.select(sector=self.sector)
@@ -63,7 +63,7 @@ class DistributionExplorer(VariableExplorer):
         return curve
 
 
-class BoxplotExplorer(VariableExplorer):
+class BoxplotExplorer(StorageVariableExplorer):
     @param.depends('rolling_window', 'variable', 'sector')
     def load_symbol(self):
         data = self.dataset.select(sector=self.sector)
@@ -72,7 +72,7 @@ class BoxplotExplorer(VariableExplorer):
         return boxplot
 
 
-class ViolinExplorer(VariableExplorer):
+class ViolinExplorer(StorageVariableExplorer):
     @param.depends('rolling_window', 'variable', 'sector')
     def load_symbol(self):
         data = self.dataset.select(sector=self.sector)
@@ -81,7 +81,7 @@ class ViolinExplorer(VariableExplorer):
         return plot
 
 
-class RegionDataExplorer(VariableExplorer):
+class RegionDataExplorer(StorageVariableExplorer):
 
     def __init__(self, dataset):
         super().__init__(dataset)
@@ -104,3 +104,74 @@ class RegionDataExplorer(VariableExplorer):
         # outliers = rolling_outlier_std(dmap, rolling_window=self.rolling_window).opts(
         #   color='red', marker='triangle', framewise=True)
         return (smoothed).opts(aspect=golden)
+
+
+class AgentVariableExplorer(param.Parameterized):
+
+    def __init__(self, dataset):
+        super().__init__()
+        self.dataset = dataset
+        variable_names = [i_dim.name for i_dim in self.dataset.vdims]
+        self.variable = param.ObjectSelector(default=variable_names[0], objects=variable_names)
+        self.rolling_window = param.Integer(default=1, bounds=(1, 1000))
+        self.agent = param.ObjectSelector(default=0,
+                                          objects=range(0, len(definitions.producing_sectors_name_index_dict)))
+
+    @param.depends('rolling_window', 'variable', 'agent')
+    def load_symbol(self):
+        selection = self.dataset.select(agent=self.agent)
+        curve = hv.Curve(selection, 'time', self.variable)
+        curve.opts(color=definitions.agent_colors[self.agent])
+        return curve
+
+    @param.depends('rolling_window', 'variable', 'agent')
+    def view(self):
+        dmap = hv.DynamicMap(self.load_symbol)
+        return (dmap).opts(aspect=golden)
+
+
+class AgentOverlayVariableExplorer(AgentVariableExplorer):
+    @param.depends('rolling_window', 'variable')
+    def load_symbol(self):
+        selection = self.dataset
+        curve = selection.to(hv.Curve, 'time', self.variable, groupby='agent').overlay()
+        curve.opts(hv.opts.Curve(color=hv.Cycle(definitions.agent_colors),
+                                 x_range=(min(self.dataset.time), max(self.dataset.time)), show_legend=False))
+        return curve
+
+    @param.depends('rolling_window', 'variable', 'agent')
+    def view(self):
+        dmap = hv.DynamicMap(self.load_symbol)
+        # add rolling mean
+        smoothed = rolling(dmap, rolling_window=self.rolling_window)
+        # TODO: add outliers
+        # outliers = rolling_outlier_std(dmap, rolling_window=self.rolling_window).opts(
+        #   color='red', marker='triangle', framewise=True)
+        return (smoothed).opts(aspect=golden, x_range=(min(self.dataset.time), max(self.dataset.time)))
+
+
+class AgentDistributionExplorer(StorageVariableExplorer):
+    @param.depends('rolling_window', 'variable')
+    def load_symbol(self):
+        data = self.dataset
+        curve = data.to(hv.Distribution, self.variable, [], groupby='agent').overlay()
+        curve.opts(hv.opts.Distribution(filled=True, color=hv.Cycle(definitions.agent_colors), alpha=0.9))
+        return curve
+
+
+class AgentBoxplotExplorer(StorageVariableExplorer):
+    @param.depends('rolling_window', 'variable')
+    def load_symbol(self):
+        data = self.dataset
+        boxplot = data.to(hv.BoxWhisker, 'agent', self.variable, groupby="agent").overlay()
+        boxplot.opts(hv.opts.BoxWhisker(box_fill_color='agent', cmap=definitions.agent_colors_list))
+        return boxplot
+
+
+class AgentViolinExplorer(StorageVariableExplorer):
+    @param.depends('rolling_window', 'variable')
+    def load_symbol(self):
+        data = self.dataset
+        plot = data.to(hv.Violin, 'agent', self.variable, groupby="agent").overlay()
+        plot.opts(hv.opts.Violin(violin_fill_color='agent', cmap=definitions.agent_colors_list))
+        return plot

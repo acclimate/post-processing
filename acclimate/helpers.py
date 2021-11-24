@@ -1,7 +1,9 @@
 # TODO helper functions for dealing with acclimate output datasets
 import os
+import re
 
 import holoviews as hv
+import numpy as np
 import xarray as xr
 
 from acclimate import definitions
@@ -97,8 +99,58 @@ def clean_vdims_consumption(data, sector_map=definitions.producing_sector_map):
 
 
 def load_region_data(datadir, filename, region, sector_map=definitions.producing_sector_map):
-    data = hv.Dataset(xr.open_dataset(os.path.join(datadir, filename + region + ".nc")))
-    return clean_vdims_consumption(data, sector_map=sector_map)
+    data = xr.open_dataset(os.path.join(datadir, filename + region + ".nc"))
+    data = instant_calculate_empiricial_elasticities(data)
+    dataset = hv.Dataset(data)
+    return clean_vdims_consumption(dataset, sector_map=sector_map)
+
+
+def baseline_calculate_empiricial_elasticities(data, classifier=re.compile('(.*)(_.*)'), tolerance=0.00001):
+    variables = list(data.keys())
+    # TODO: improve automatch value quantity pairs
+    values = list(filter(lambda x: "value" in x, variables))
+    quants = list(filter(lambda x: "quantity" in x, variables))
+    quantity_value_pairs = list(zip(quants, values))
+    try:
+        for i_pair in quantity_value_pairs:
+            identifier = classifier.match(i_pair[0])[1]
+            quantity_change = data[i_pair[0]] - 1
+            quantity_change = quantity_change.where(np.abs(quantity_change) > tolerance)
+            price_change = (data[i_pair[1]] / data[i_pair[0]]) - 1
+            price_change = price_change.where(np.abs(price_change) > tolerance)
+            data[identifier + "_elasticity"] = quantity_change / price_change
+            data[identifier + "_elasticity"] = data[identifier + "_elasticity"].where(
+                np.abs(data[identifier + "_elasticity"]) <= 15)
+    except Exception as e:
+        print(e)
+        print("no fitting data for elasticity calculation - need *_quantity and *_value variables")
+    return data
+
+
+def instant_calculate_empiricial_elasticities(data, classifier=re.compile('(.*)(_.*)'), tolerance=0.00001):
+    variables = list(data.keys())
+    # TODO: improve automatch value quantity pairs
+    values = list(filter(lambda x: "value" in x, variables))
+    quants = list(filter(lambda x: "quantity" in x, variables))
+    quantity_value_pairs = list(zip(quants, values))
+    try:
+        for i_pair in quantity_value_pairs:
+            identifier = classifier.match(i_pair[0])[1]
+            quantity_change = data[i_pair[0]].diff("time")
+            quantity_change = quantity_change.where(np.abs(quantity_change) > tolerance)
+            price_change = (data[i_pair[1]] / data[i_pair[0]]).diff("time")
+            price_change = price_change.where(np.abs(price_change) > tolerance)
+            cond = range(1, len(data.time))
+            data = (data.sel(
+                time=cond))  # TODO: maybe more elegant way to fix ammending issue due to diff = 1 value less (dropping t=0 not very bad, since baseline anyways
+            data[
+                identifier + "_elasticity"] = quantity_change / price_change
+            data[identifier + "_elasticity"] = data[identifier + "_elasticity"].where(
+                np.abs(data[identifier + "_elasticity"]) <= 15)
+    except Exception as e:
+        print(e)
+        print("no fitting data for elasticity calculation - need *_quantity and *_value variables")
+    return data
 
 
 def load_region_basket_data(datadir, filename, region):

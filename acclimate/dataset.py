@@ -27,8 +27,12 @@ class AcclimateOutput:
             try:
                 self.xarrays[i_group] = xr.open_dataset(
                     filename, group=i_group, chunks={
-                        "time": 40})  # TODO: choose chunk size in some dynamic fashion, but for usual ca. 8000 agents in acclimate with approx. 5 variables we get around 1.6m floats as recommended
+                        "time": 40},
+                    decode_times=True)  # TODO: choose chunk size in some dynamic fashion, but for usual ca. 8000 agents in acclimate with approx. 5 variables we get around 1.6m floats as recommended
                 # https://docs.dask.org/en/latest/array-best-practices.html
+                # self.xarrays[i_group]["time"] = ("time", self.xarrays[i_group]["time"], {"units": "days since 2019-01-01"})
+                # self.xarrays[i_group] = xr.decode_cf(self.xarrays[i_group])
+                # TODO: find proper way to get dates into xarray, but first need to make more precise acclimate time output
             except:
                 print("data without time dimension not loaded")
 
