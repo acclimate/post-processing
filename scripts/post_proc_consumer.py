@@ -107,16 +107,17 @@ def safe_file_dict(filedict, outputdir):
 # create dask cluster utilitzing dask.jobqueue
 cluster = SLURMCluster(
     job_extra=["--qos standby"],
-    queue="standard",
+    queue="priority",
     project="acclimat",
-    cores=4,
-    memory="16 GB",
-    walltime="0-00:10:00",
-    extra=["--lifetime", "10", "--lifetime-stagger", "1m"]
+    cores=1,
+    memory="4 GiB",
+    walltime="0-00:30:00",
+    extra=["--lifetime", "30", "--lifetime-stagger", "1m"],
+    interface="ib0"
 )
 
-cluster.adapt(minimum=0, maximum=64)
-# cluster.scale(n=32)
+cluster.adapt(minimum=4, maximum=128)
+# cluster.scale(n=64)
 from dask.distributed import Client
 
 client = Client(cluster)
@@ -156,9 +157,9 @@ def storage_calculations(regions, storage_data, output):
 print("Crunching numbers for single regions...")
 
 
-def compute_tasklist(tasklist):
-    dask.compute(*tasklist)
-
+def compute_tasklist(tasklists):
+    tasks = [i_task for tasklist in tasklists for i_task in tasklist]  # flatten if list of lists
+    dask.compute(*tasks)
 
 tasks = []
 print("Storages...")
@@ -177,10 +178,14 @@ storage_files = regionalize_data(args.regions, baseline_storage_data, output,
                                  sectors=list(definitions.producing_sectors_name_index_dict.values()),
                                  data_baseline_relative=True)
 tasks.append(safe_file_dict(storage_files, args.outputdir))
+compute_tasklist(tasks)
+tasks = []
 aggregated_storage_files = regionalize_data(args.regions, baseline_aggregated_storage_data, output, sectors=[0, 1, 2],
                                             filenamestub="baseline_relative_consumer_basket_storage_",
                                             data_baseline_relative=True)
 tasks.append(safe_file_dict(aggregated_storage_files, args.outputdir))
+compute_tasklist(tasks)
+tasks = []
 print("Consumers...")
 # # calculate consumer data
 consumer_data = output.xarrays["consumers"]
@@ -189,6 +194,8 @@ if args.regions[0] == "ALL":
 consumer_files = regionalize_data(args.regions, consumer_data, output,
                                   sectors=None, filenamestub="baseline_relative_consumer_data_")
 tasks.append(safe_file_dict(consumer_files, args.outputdir))
+compute_tasklist(tasks)
+tasks = []
 print("Firms...")
 # # calculate firm data
 firm_data = output.xarrays["firms"]
@@ -197,10 +204,8 @@ if args.regions[0] == "ALL":
 firm_files = regionalize_data(args.regions, firm_data, output,
                               sectors=None, filenamestub="baseline_relative_firm_data_", aggregate_regions=False)
 tasks.append(safe_file_dict(firm_files, args.outputdir))
-
-# call compute just once to allow maximum optimization by dask scheduler
-tasks = [i_task for tasklist in tasks for i_task in tasklist]
 compute_tasklist(tasks)
+tasks = []
 
 print("aggregated region statistics are calculated...")
 region_data = output.xarrays["regions"]
