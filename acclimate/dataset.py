@@ -26,15 +26,14 @@ class AcclimateOutput:
         for i_group in self.groups:
             try:
                 self.xarrays[i_group] = xr.open_dataset(
-                    filename, group=i_group, chunks={
-                        "time": 40},
-                    decode_times=True)  # TODO: choose chunk size in some dynamic fashion, but for usual ca. 8000 agents in acclimate with approx. 5 variables we get around 1.6m floats as recommended
+                    filename, group=i_group, chunks={"agent": 155})  # TODO: choose chunk size in some dynamic fashion
                 # https://docs.dask.org/en/latest/array-best-practices.html
                 # self.xarrays[i_group]["time"] = ("time", self.xarrays[i_group]["time"], {"units": "days since 2019-01-01"})
                 # self.xarrays[i_group] = xr.decode_cf(self.xarrays[i_group])
                 # TODO: find proper way to get dates into xarray, but first need to make more precise acclimate time output
             except:
-                print("data without time dimension not loaded")
+                self.xarrays[i_group] = xr.open_dataset(
+                    filename, group=i_group)  # TODO: alternative chunking dimension for "simple" timeseries?!
 
     def agent(self, sector=None, region=None, type=None):
         def remap(v, lookupdict):
@@ -75,11 +74,9 @@ class AcclimateOutput:
 def baseline_value(x, baseline_timepoint=0):
     return x.sel(time=baseline_timepoint)
 
-
 # baseline, i.e. t=0, relative average:
 def baseline_relative(x):
     return (x / baseline_value(x))
-
 
 def time_average(x):
     return x.mean("time")
