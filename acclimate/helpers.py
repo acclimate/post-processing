@@ -1,12 +1,10 @@
 # TODO helper functions for dealing with acclimate output datasets
 import os
-import re
 
 import holoviews as hv
-import numpy as np
 import xarray as xr
 
-from acclimate import definitions
+from acclimate import definitions, analysis
 
 
 def select_partial_data(data, sector=None, region=None, agent=None):
@@ -89,69 +87,31 @@ def aggregate_by_sector_group(data, sector_groups):
 
 # some helpers on data exploration
 
-def clean_vdims_consumption(data, sector_map=definitions.producing_sector_map):
-    data.kdims[0].value_format = definitions.consumer_map
-    data.kdims[0].values = list(range(0, 5))
-    data.kdims[0].label = "income quintile"
-    data.kdims[1].value_format = sector_map
-    data.kdims[1].values = list(range(0, 26))
+def clean_vdims_consumption(data, agent_map=definitions.consumer_map, agent_label="income_qunitile",
+                            sector_map=definitions.producing_sector_map):
+    for dimension in data.kdims:
+        if dimension.name == "agent":
+            dimension.value_format = agent_map
+            dimension.label = agent_label
+        if dimension.name == "sector":
+            dimension.value_format = sector_map
+            dimension.values = list(range(0, 26))
+        if dimension.name == "time":
+            dimension.label = "Time"
     return data
 
 
-def load_region_data(datadir, filename, region, sector_map=definitions.producing_sector_map):
+def load_region_data(datadir, filename, region, sector_map=definitions.producing_sector_map, elasticities=False,
+                     agent_map=definitions.consumer_map, agent_label="income_quintile"):
     data = xr.open_dataset(os.path.join(datadir, filename + region + ".nc"))
-    data = instant_calculate_empiricial_elasticities(data)
     dataset = hv.Dataset(data)
-    return clean_vdims_consumption(dataset, sector_map=sector_map)
+    if elasticities:
+        dataset = analysis.calculate_empiricial_elasticities(dataset)
+        dataset = analysis.rolling_window_elasticity(dataset)
+        dataset = analysis.savgol_elasticity(dataset)
+
+    return clean_vdims_consumption(dataset, sector_map=sector_map, agent_map=agent_map, agent_label=agent_label)
 
 
-def baseline_calculate_empiricial_elasticities(data, classifier=re.compile('(.*)(_.*)'), tolerance=0.00001):
-    variables = list(data.keys())
-    # TODO: improve automatch value quantity pairs
-    values = list(filter(lambda x: "value" in x, variables))
-    quants = list(filter(lambda x: "quantity" in x, variables))
-    quantity_value_pairs = list(zip(quants, values))
-    try:
-        for i_pair in quantity_value_pairs:
-            identifier = classifier.match(i_pair[0])[1]
-            quantity_change = data[i_pair[0]] - 1
-            quantity_change = quantity_change.where(np.abs(quantity_change) > tolerance)
-            price_change = (data[i_pair[1]] / data[i_pair[0]]) - 1
-            price_change = price_change.where(np.abs(price_change) > tolerance)
-            data[identifier + "_elasticity"] = quantity_change / price_change
-            data[identifier + "_elasticity"] = data[identifier + "_elasticity"].where(
-                np.abs(data[identifier + "_elasticity"]) <= 15)
-    except Exception as e:
-        print(e)
-        print("no fitting data for elasticity calculation - need *_quantity and *_value variables")
-    return data
-
-
-def instant_calculate_empiricial_elasticities(data, classifier=re.compile('(.*)(_.*)'), tolerance=0.00001):
-    variables = list(data.keys())
-    # TODO: improve automatch value quantity pairs
-    values = list(filter(lambda x: "value" in x, variables))
-    quants = list(filter(lambda x: "quantity" in x, variables))
-    quantity_value_pairs = list(zip(quants, values))
-    try:
-        for i_pair in quantity_value_pairs:
-            identifier = classifier.match(i_pair[0])[1]
-            quantity_change = data[i_pair[0]].diff("time")
-            quantity_change = quantity_change.where(np.abs(quantity_change) > tolerance)
-            price_change = (data[i_pair[1]] / data[i_pair[0]]).diff("time")
-            price_change = price_change.where(np.abs(price_change) > tolerance)
-            cond = range(1, len(data.time))
-            data = (data.sel(
-                time=cond))  # TODO: maybe more elegant way to fix ammending issue due to diff = 1 value less (dropping t=0 not very bad, since baseline anyways
-            data[
-                identifier + "_elasticity"] = quantity_change / price_change
-            data[identifier + "_elasticity"] = data[identifier + "_elasticity"].where(
-                np.abs(data[identifier + "_elasticity"]) <= 15)
-    except Exception as e:
-        print(e)
-        print("no fitting data for elasticity calculation - need *_quantity and *_value variables")
-    return data
-
-
-def load_region_basket_data(datadir, filename, region):
-    return load_region_data(datadir, filename, region, sector_map=definitions.basket_map)
+def load_region_basket_data(datadir, filename, region, elasticities=True):
+    return load_region_data(datadir, filename, region, sector_map=definitions.basket_map, elasticities=elasticities)
