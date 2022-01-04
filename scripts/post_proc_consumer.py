@@ -4,16 +4,16 @@ import os
 
 import dask
 import xarray as xr
+from dask.distributed import Client
 from dask_jobqueue import SLURMCluster
 
-from acclimate import dataset, definitions
-from acclimate import helpers
+from acclimate import dataset, definitions, helpers
 
 parser = argparse.ArgumentParser(description="Process acclimate output for easy and fast plotting.")
 parser.add_argument(
     "--acclimate_output"
-    , type=str,
-    required=True,
+    , required=True,
+    type=str,
     help="Path to the acclimate data file (default: CURRENT/output.nc)"
 )
 parser.add_argument(
@@ -46,9 +46,8 @@ def regionalize_data(regions, data, output, sectors=None, agent_type="consumer",
     for i_region in regions:
         filtered_data = single_region_data(i_region, data, output, sectors=sectors, agent_type=agent_type,
                                            aggregate_regions=aggregate_regions)
-        # first filter, than baseline relative to reduce memory load
         baseline_data = filtered_data
-        if not baseline_relative:
+        if not data_baseline_relative:
             baseline_data = baseline_relative(filtered_data)
         filename = filenamestub + i_region + ".nc"
         files[filename] = baseline_data
@@ -56,9 +55,8 @@ def regionalize_data(regions, data, output, sectors=None, agent_type="consumer",
 
 
 def single_region_data(region, data, output, sectors=None, agent_type="consumer", aggregate_regions=True):
-    # filter for groups of regions
     with dask.config.set(**{'array.slicing.split_large_chunks': True}):
-        if region in definitions.WORLD_REGIONS.keys():
+        if region in definitions.WORLD_REGIONS.keys():  # filter for groups of regions
             if aggregate_regions:
                 return aggregate_subregions(region, data, output, sectors=sectors, agent_type=agent_type)
             else:
@@ -69,7 +67,7 @@ def single_region_data(region, data, output, sectors=None, agent_type="consumer"
 
 
 def aggregate_subregions(region_group, data, output, sectors=None, agent_type="consumer"):
-    regions_to_aggregate = list(set(definitions.WORLD_REGIONS[region_group]) - set(["BLR", "MDA", "SDN", "ZWE"]))
+    regions_to_aggregate = list(set(definitions.WORLD_REGIONS[region_group]) - {"BLR", "MDA", "SDN", "ZWE"})
     aggregated_data = []
     for i_subregion in regions_to_aggregate:
         if i_subregion in definitions.WORLD_REGIONS.keys():
@@ -88,8 +86,10 @@ def select_storage(region, data, output, sectors=None, agent_type="consumer"):
         helpers.select_by_agent_properties(data, output, type=agent_type, region=region),
         sector=sectors)
 
+
 def baseline_relative(data):
     return data.map(dataset.baseline_relative)
+
 
 def safe_file(data, filename, outputdir):
     return data.to_netcdf(os.path.join(outputdir, filename), compute=False)
@@ -102,6 +102,10 @@ def safe_file_dict(filedict, outputdir):
     return files
 
 
+def compute_tasklist(tasklists):
+    tasks = [i_task for tasklist in tasklists for i_task in tasklist]  # flatten if list of lists
+    dask.compute(*tasks)
+
 
 # experimental use of adaptive dask cluster to speed up operations if capacity is available on the cluster
 # create dask cluster utilitzing dask.jobqueue
@@ -109,20 +113,13 @@ cluster = SLURMCluster(
     job_extra=["--qos standby"],
     queue="priority",
     project="acclimat",
-    cores=1,
-    memory="4 GiB",
-    walltime="0-00:30:00",
-    extra=["--lifetime", "30", "--lifetime-stagger", "1m"],
-    interface="ib0"
+    walltime="0-00:60:00",
+    extra=["--lifetime", "57m", "--lifetime-stagger", "3m"]
 )
 
-cluster.adapt(minimum=4, maximum=128)
-# cluster.scale(n=64)
-from dask.distributed import Client
-
+cluster.adapt(minimum=4, maximum=512)  # TODO: fix buggy adaptive scaling
+# cluster.scale(jobs=128)
 client = Client(cluster)
-
-output = dataset.AcclimateOutput(args.acclimate_output)
 
 if args.regions[0] == "CORE":
     region_groups = ["USA", "CHN", "EU28", "G20_REST", "BRIS"]
@@ -141,77 +138,102 @@ if args.regions[0] == "ALL":
 
 print(args.regions)
 
+output = dataset.AcclimateOutput(args.acclimate_output)
 
-storage_data = output.xarrays["storages"]
+print("aggregated region statistics are calculated...")
+region_data = output.xarrays["regions"]
+with dask.config.set(**{'array.slicing.split_large_chunks': True}):
+    baseline_region_data = baseline_relative(region_data).compute()
+baseline_region_data.to_netcdf(os.path.join(args.outputdir, "baseline_relative_region_data.nc"))
 
+print("aggregated sector statistics are calculated...")
+sector_data = output.xarrays["sectors"]
+with dask.config.set(**{'array.slicing.split_large_chunks': True}):
+    baseline_sector_data = baseline_relative(sector_data).compute()
+baseline_sector_data.to_netcdf(os.path.join(args.outputdir, "baseline_relative_sector_data.nc"))
 
-def storage_calculations(regions, storage_data, output):
-    regionalize_data(regions, storage_data, output,
-                     sectors=list(definitions.producing_sectors_name_index_dict.values()))
-    regionalize_data(regions, storage_data, output,
-                     sectors=list(definitions.producing_sectors_name_index_dict.values()),
-                     agent_type="firm", filenamestub="baseline_relative_firm_storage_",
-                     aggregate_regions=False)
-
+single_regions = list(set(args.regions) - set(definitions.WORLD_REGIONS.keys()))
+aggregate_regions = list(set(args.regions) - set(single_regions))
 
 print("Crunching numbers for single regions...")
-
-
-def compute_tasklist(tasklists):
-    tasks = [i_task for tasklist in tasklists for i_task in tasklist]  # flatten if list of lists
-    dask.compute(*tasks)
-
-tasks = []
 print("Storages...")
-
+storage_data = output.xarrays["storages"]
 # aggregated storage data to check consumption patterns
-with dask.config.set(**{'array.slicing.split_large_chunks': True}):
-    aggregated_storage_data = helpers.aggregate_by_sector_group(storage_data, definitions.consumption_baskets)
-baseline_aggregated_storage_data = baseline_relative(aggregated_storage_data)
-if args.regions[0] == "ALL":
-    baseline_aggregated_storage_data.persist()
 
-baseline_storage_data = baseline_relative(storage_data)
 if args.regions[0] == "ALL":
-    baseline_storage_data.persist()
-storage_files = regionalize_data(args.regions, baseline_storage_data, output,
+    storage_data.persist()
+
+baseline_storage_data_temp = baseline_relative(storage_data)
+# writing to disk as hinted in dask tips:
+baseline_storage_data_temp.to_netcdf(os.path.join(args.outputdir, "baseline_relative_storage_data.nc"))
+# loading from disk
+baseline_storage_data = xr.open_dataset(os.path.join(args.outputdir, "baseline_relative_storage_data.nc"))
+
+storage_files = regionalize_data(single_regions, baseline_storage_data, output,
                                  sectors=list(definitions.producing_sectors_name_index_dict.values()),
                                  data_baseline_relative=True)
-tasks.append(safe_file_dict(storage_files, args.outputdir))
+aggregate_regions_storage_files = regionalize_data(aggregate_regions, storage_data, output,
+                                                   sectors=list(definitions.producing_sectors_name_index_dict.values()),
+                                                   data_baseline_relative=False)
+tasks = [safe_file_dict(storage_files, args.outputdir)]
+tasks.append(safe_file_dict(aggregate_regions_storage_files, args.outputdir))
 compute_tasklist(tasks)
-tasks = []
-aggregated_storage_files = regionalize_data(args.regions, baseline_aggregated_storage_data, output, sectors=[0, 1, 2],
+
+with dask.config.set(**{'array.slicing.split_large_chunks': True}):
+    temp_aggregated_storage_data = helpers.aggregate_by_sector_group(storage_data, definitions.consumption_baskets)
+    # writing to disk as hinted in dask tips:
+    temp_aggregated_storage_data.to_netcdf(
+        os.path.join(args.outputdir, "aggregated_storage_data.nc"))
+    # loading from disk
+    aggregated_storage_data = xr.open_dataset(
+        os.path.join(args.outputdir, "aggregated_storage_data.nc"))
+if args.regions[0] == "ALL":
+    aggregated_storage_data.persist()
+
+temp_baseline_aggregated_storage_data = baseline_relative(aggregated_storage_data)
+# writing to disk as hinted in dask tips:
+temp_baseline_aggregated_storage_data.to_netcdf(
+    os.path.join(args.outputdir, "baseline_relative_aggregated_storage_data.nc"))
+# loading from disk
+baseline_aggregated_storage_data = xr.open_dataset(
+    os.path.join(args.outputdir, "baseline_relative_aggregated_storage_data.nc"))
+
+aggregated_storage_files = regionalize_data(single_regions, baseline_aggregated_storage_data, output, sectors=[0, 1, 2],
                                             filenamestub="baseline_relative_consumer_basket_storage_",
                                             data_baseline_relative=True)
-tasks.append(safe_file_dict(aggregated_storage_files, args.outputdir))
+aggregate_regions_aggregated_storage_files = regionalize_data(aggregate_regions, aggregated_storage_data, output,
+                                                              sectors=[0, 1, 2],
+                                                              filenamestub="baseline_relative_consumer_basket_storage_",
+                                                              data_baseline_relative=False)
+
+tasks = [safe_file_dict(aggregated_storage_files, args.outputdir)]
+tasks.append(safe_file_dict(aggregate_regions_aggregated_storage_files, args.outputdir))
 compute_tasklist(tasks)
-tasks = []
+
 print("Consumers...")
 # # calculate consumer data
 consumer_data = output.xarrays["consumers"]
 if args.regions[0] == "ALL":
     consumer_data.persist()
 consumer_files = regionalize_data(args.regions, consumer_data, output,
-                                  sectors=None, filenamestub="baseline_relative_consumer_data_")
-tasks.append(safe_file_dict(consumer_files, args.outputdir))
+                                  sectors=None, filenamestub="baseline_relative_consumer_data_",
+                                  data_baseline_relative=False)
+tasks = [safe_file_dict(consumer_files, args.outputdir)]
 compute_tasklist(tasks)
-tasks = []
-print("Firms...")
-# # calculate firm data
-firm_data = output.xarrays["firms"]
-if args.regions[0] == "ALL":
-    firm_data.persist()
-firm_files = regionalize_data(args.regions, firm_data, output,
-                              sectors=None, filenamestub="baseline_relative_firm_data_", aggregate_regions=False)
-tasks.append(safe_file_dict(firm_files, args.outputdir))
-compute_tasklist(tasks)
-tasks = []
 
-print("aggregated region statistics are calculated...")
-region_data = output.xarrays["regions"]
-with dask.config.set(**{'array.slicing.split_large_chunks': True}):
-    baseline_region_data = baseline_relative(region_data)
-    baseline_region_data = baseline_region_data.compute()
-baseline_region_data.to_netcdf(os.path.join(args.outputdir, "baseline_relative_region_data.nc"))
+# print("Firms...")
+#
+# # # calculate firm data
+# firm_data = output.xarrays["firms"]
+# if args.regions[0] == "ALL":
+#     firm_data.persist()
+# firm_files = regionalize_data(args.regions, firm_data, output,
+#                               sectors=None, filenamestub="baseline_relative_firm_data_", aggregate_regions=False)
+# tasks = [safe_file_dict(firm_files, args.outputdir)]
+# compute_tasklist(tasks)
+#
 
 print("Done.")
+
+cluster.close()
+client.close()
