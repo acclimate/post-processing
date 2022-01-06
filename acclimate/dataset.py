@@ -26,7 +26,8 @@ class AcclimateOutput:
         for i_group in self.groups:
             try:
                 self.xarrays[i_group] = xr.open_dataset(
-                    filename, group=i_group, chunks={"agent": 155})  # TODO: choose chunk size in some dynamic fashion
+                    filename, group=i_group,
+                    chunks={"agent": 100, "time": 1000})  # TODO: choose chunk size in some dynamic fashion
                 # https://docs.dask.org/en/latest/array-best-practices.html
                 # self.xarrays[i_group]["time"] = ("time", self.xarrays[i_group]["time"], {"units": "days since 2019-01-01"})
                 # self.xarrays[i_group] = xr.decode_cf(self.xarrays[i_group])

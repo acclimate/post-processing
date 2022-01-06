@@ -101,13 +101,12 @@ def clean_vdims_consumption(data, agent_map=definitions.consumer_map, agent_labe
     return data
 
 
-def load_region_data(datadir, filename, region, sector_map=definitions.producing_sector_map, elasticities=False,
+def load_region_data(datadir, filename, region, sector_map=definitions.producing_sector_map, elasticities=True,
                      agent_map=definitions.consumer_map, agent_label="income_quintile"):
     data = xr.open_dataset(os.path.join(datadir, filename + region + ".nc"))
     dataset = hv.Dataset(data)
     if elasticities:
         dataset = analysis.calculate_empiricial_elasticities(dataset)
-        dataset = analysis.rolling_window_elasticity(dataset)
         dataset = analysis.savgol_elasticity(dataset)
 
     return clean_vdims_consumption(dataset, sector_map=sector_map, agent_map=agent_map, agent_label=agent_label)

@@ -108,6 +108,7 @@ WORLD_REGIONS = {
         "KWT",
         "JPN",
         "KGZ",
+        "CHN"
     ],
     "EUR": [
         "BGR",

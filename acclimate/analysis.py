@@ -31,12 +31,12 @@ def baseline_calculate_empiricial_elasticities(data, classifier=re.compile('(.*)
     return data
 
 
-def estimate_relative_change(variable, tolerance, filter=None, derivative_filter=None, filter_window=30):
+def estimate_relative_change(variable, tolerance, value_filter=None, derivative_filter=None, filter_window=30):
     change = variable.differentiate("time")
-    if filter is not None:
-        filtered_variable = filter(variable, window=filter_window)
+    if value_filter is not None:
+        filtered_variable = value_filter(variable, window=filter_window)
         if derivative_filter is not None:
-            change = apply_filter_derivative(filtered_variable)
+            change = derivative_filter(filtered_variable)
         else:
             change = filtered_variable.differentiate("time")
     rel_change = change / variable
@@ -44,8 +44,9 @@ def estimate_relative_change(variable, tolerance, filter=None, derivative_filter
     return rel_change
 
 
-def calculate_empiricial_elasticities(dataset, filter=None, derivative_filter=None, filter_window=31,
-                                      classifier=re.compile('(.*)(_.*)'), tolerance=0.00001, name="elasticity"):
+def calculate_empiricial_elasticities(dataset, value_filter=None, derivative_filter=None, filter_window=31,
+                                      classifier=re.compile('(.*)(_.*)'), tolerance=0.0000001, name="elasticity",
+                                      absolute_cap=1.5):
     data = dataset.data
     new_kdims = []
     new_vdims = []
@@ -61,25 +62,31 @@ def calculate_empiricial_elasticities(dataset, filter=None, derivative_filter=No
             quantity = data[i_pair[0]]
             value = data[i_pair[1]]
             price = value / quantity
-            price_change = estimate_relative_change(price, tolerance, filter=filter,
+            price_change = estimate_relative_change(price, tolerance, value_filter=value_filter,
                                                     derivative_filter=derivative_filter, filter_window=filter_window)
-            quantity_change = estimate_relative_change(quantity, tolerance, filter=filter,
+            quantity_change = estimate_relative_change(quantity, tolerance, value_filter=value_filter,
                                                        derivative_filter=derivative_filter,
                                                        filter_window=filter_window)
             data[identifier + name] = quantity_change / price_change
-            new_vdims.append(identifier + name)
-            data[identifier + name + "_large_quantity_change"] = data[identifier + name].where(
-                rolling_window(np.abs(quantity_change), 7, reduction_function=np.nansum) > 0.0005)
-            new_vdims.append(identifier + name + "_large_quantity_change")
-            data[identifier + name + "_large_price_change"] = data[identifier + name].where(
-                rolling_window(np.abs(price_change), 7, reduction_function=np.nansum) > 0.0005)
-            new_vdims.append(identifier + name + "_large_price_change")
+            data[identifier + name + "_price_change"] = price_change
+            data[identifier + name + "_quantity_change"] = quantity_change
+
+            # dynamic data filtering based on sector 2 # ONLY REASONABLE FOR BASKET DATA
+            max_at_cap = np.nanpercentile(np.abs(price_change.sel(sector=2).where(
+                np.abs(data.sel(sector=2)[identifier + name]) > absolute_cap)), 100)
+            data["max_price_change_cap"] = price_change.where(
+                np.abs(price_change) < 0, max_at_cap, drop=False)
+            data[identifier + name + "_price_change_capped_dynamic"] = data[identifier + name + "_price_change"].where(
+                np.abs(price_change) >= max_at_cap)
+            data[identifier + name + "_quantity_change_capped_dynamic"] = data[
+                identifier + name + "_quantity_change"].where(
+                np.abs(price_change) >= max_at_cap)
+            data[identifier + name + "_capped_dynamic"] = data[identifier + name].where(
+                np.abs(price_change) >= max_at_cap)
 
     except Exception as e:
         print(e)
-    kdims = dataset.kdims.append(new_kdims)
-    vdims = dataset.vdims.append(new_vdims)
-    return hv.Dataset(data, kdims=kdims, vdims=vdims)
+    return hv.Dataset(data)
 
 
 # several smoothing filters
@@ -90,15 +97,15 @@ def rolling_window(data, window=31, reduction_function=np.nanmean):
 
 
 def rolling_window_elasticity(data):
-    return calculate_empiricial_elasticities(data, filter=rolling_window,
+    return calculate_empiricial_elasticities(data, value_filter=rolling_window,
                                              name="rolling_elasticity")
 
 
-def savgol_filter(data, window=31):
+def savgol_filter(data, window=7):
     return signal.savgol_filter(data, window, 2, deriv=0)
 
 
-def savgol_filter_derivative(data, window=31):
+def savgol_filter_derivative(data, window=7):
     return signal.savgol_filter(data, window, 2, deriv=1)
 
 
@@ -111,7 +118,7 @@ def apply_filter_derivative(data, filter=savgol_filter_derivative, window=31):
 
 
 def savgol_elasticity(data):
-    return calculate_empiricial_elasticities(data, filter=apply_filter, derivative_filter=apply_filter_derivative,
+    return calculate_empiricial_elasticities(data, value_filter=apply_filter, derivative_filter=apply_filter_derivative,
                                              name="savgol_elasticity", filter_window=31)
 
 
