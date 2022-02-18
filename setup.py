@@ -32,7 +32,7 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
 ]
-REQUIREMENTS_INSTALL = ["numpy>=1.7", "netcdf4"]
+REQUIREMENTS_INSTALL = ["numpy>=1.7", "netcdf4", 'xarray', 'pandas']
 REQUIREMENTS_DOCS = ["sphinx>=1.8", "sphinx_rtd_theme"]
 REQUIREMENTS_DEV = [
     "black",

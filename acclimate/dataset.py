@@ -1,83 +1,63 @@
 #!/usr/bin/env python3
-# TODO: built custom wrapper for NetCDF output
-import numpy as np
+import pandas as pd
 import xarray as xr
-from netCDF4 import *
-
-from acclimate import definitions
+from netCDF4 import Dataset
 
 
-class AcclimateOutput:
-    def __init__(self, filename):
-        self.dataset = Dataset(filename)
-        self.groups = self.dataset.groups
-        self.__agents = self.dataset.variables["agent"][:]
-        self.agents = {str(v[0]): i for i, v in enumerate(self.__agents)}
-        self.sectors = {v: i for i, v in enumerate(self.dataset.variables["sector"])}
-        self.regions = {v: i for i, v in enumerate(self.dataset.variables["region"])}
-        for r in definitions.WORLD_REGIONS:
-            if r not in self.regions:
-                self.regions[r] = definitions.WORLD_REGIONS[r]
-        self.agent_types = {
-            v: i for i, v in enumerate(self.dataset.variables["agent_type"])
-        }
-        # initialize dictionary of dask xarrays for all groups
-        self.xarrays = {}
-        for i_group in self.groups:
+# TODO: implement baseline values --> should be separated from the rest of the data s.th. it does not get lost upon
+#       modification of the data itself; any shape modification (e.g. region filtering) should be applied to the
+#       baseline too, though
+class AcclimateOutput(xr.Dataset):
+    def __init__(self, filename, start_date=None, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for i_group in ['firms', 'regions']:
             try:
-                self.xarrays[i_group] = xr.open_dataset(
-                    filename, group=i_group,
-                    chunks={"agent": 100, "time": 1000})  # TODO: choose chunk size in some dynamic fashion
-                # https://docs.dask.org/en/latest/array-best-practices.html
-                # self.xarrays[i_group]["time"] = ("time", self.xarrays[i_group]["time"], {"units": "days since 2019-01-01"})
-                # self.xarrays[i_group] = xr.decode_cf(self.xarrays[i_group])
-                # TODO: find proper way to get dates into xarray, but first need to make more precise acclimate time output
-            except:
-                self.xarrays[i_group] = xr.open_dataset(
-                    filename, group=i_group)  # TODO: alternative chunking dimension for "simple" timeseries?!
+                with xr.open_dataset(filename, group=i_group) as _data:
+                    _data = _data.rename({v: "{}_{}".format(i_group, v) for v in list(_data.variables)})
+                    self.update(_data)
+            except OSError as e:
+                print("OS error: {0}".format(e))
+        with Dataset(filename, 'r') as ncdata:
+            if start_date is None:
+                start_date = ncdata['time'].units.split(' ')[-1]
+            agent_var = ncdata['agent'][:]
+            region_var = ncdata['region'][:]
+            sector_var = ncdata['sector'][:]
+            agent_type_var = ncdata['agent_type'][:]
+            coords = {
+                'agent': pd.MultiIndex.from_tuples(
+                    zip(
+                        [region_var[a['region']] for a in agent_var],
+                        [sector_var[a['sector']] if a['agent_type'] == 0 else 'FCON' for a in agent_var],
+                        [agent_type_var[a['agent_type']] for a in agent_var],
+                        [a['name'].decode('UTF-8') for a in agent_var]
+                    ),
+                    names=['agent_region', 'agent_sector', 'agent_type', 'agent_name']
+                ),
+                'region': region_var,
+                'sector': sector_var,
+                'time': pd.date_range(start_date, periods=len(ncdata['time']), freq='D'),
+            }
+        for coord, ticks in coords.items():
+            self[coord] = ticks
 
-    def agent(self, sector=None, region=None, type=None):
-        def remap(v, lookupdict):
-            if v is None:
-                return lookupdict.values()
-            elif isinstance(v, int):
-                return [v]
-            elif isinstance(v, str):
-                return remap(lookupdict[v], lookupdict)
+    def sel(self, **kwargs):
+        if 'region' in kwargs and 'agent_region' in kwargs:
+            raise ValueError('Can only specify one of region and agent_region')
+        if 'sector' in kwargs and 'agent_sector' in kwargs:
+            raise ValueError('Can only specify one of sector and agent_sector')
+        if 'region' in kwargs or 'agent_region' in kwargs:
+            if 'region' in kwargs:
+                kwargs['agent_region'] = kwargs['region']
             else:
-                return [k for i in v for k in remap(i, lookupdict)]
-
-        sector = remap(sector, self.sectors)
-        region = remap(region, self.regions)
-        type = remap(type, self.agent_types)
-        return [
-            i
-            for i, v in enumerate(self.__agents)
-            if v[1] in type and v[2] in sector and v[3] in region
-        ]
-
-    def sum(self, var, *args, time=None):
-        return np.nansum(
-            self.dataset[var].__getitem__(
-                tuple([slice(None, None, None) if time is None else time] + list(args))
-            ),
-            axis=tuple([i + 1 for i, _ in enumerate(args)]),
-        )
-
-    def get_var(self, var, *args, time=None):
-        self.dataset[var].__getitem__(
-            tuple([slice(None, None, None) if time is None else time] + list(args))
-        )
-
-
-# sketch of some helper functions to aggregate xarray Datasets
-# TODO: structure - what goes here, what to helpers / analysis
-def baseline_value(x, baseline_timepoint=0):
-    return x.sel(time=baseline_timepoint)
-
-# baseline, i.e. t=0, relative average:
-def baseline_relative(x):
-    return (x / baseline_value(x))
-
-def time_average(x):
-    return x.mean("time")
+                kwargs['region'] = kwargs['agent_region']
+        if 'sector' in kwargs or 'agent_sector' in kwargs:
+            if 'sector' in kwargs:
+                kwargs['agent_sector'] = kwargs['sector']
+            else:
+                kwargs['sector'] = kwargs['agent_sector']
+            if kwargs['sector'] == 'FCON':
+                kwargs['agent_type'] = 'consumer'
+            else:
+                kwargs['agent_type'] = 'firm'
+        return super().sel(**kwargs)
