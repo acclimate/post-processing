@@ -103,9 +103,12 @@ class AcclimateOutput:
         return _repr
 
     def __getattr__(self, attr):
-        if attr in dir(xr.Dataset):
-            def wrapped_func(*args, **kwargs):
-                return self.wrapper_func(func=attr, *args, **kwargs)
-            return wrapped_func
-        else:
-            return getattr(self._data, attr)
+        if attr in dir(self._data):
+            if hasattr(getattr(self._data, attr), '__call__'):
+                def res(*args, **kwargs):
+                    return self.wrapper_func(func=attr, *args, **kwargs)
+                res.__doc__ = getattr(self._data, attr).__doc__
+            else:
+                res = getattr(self._data, attr)
+            return res
+
