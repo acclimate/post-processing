@@ -76,9 +76,9 @@ class AcclimateOutput:
         for key in agent_subindex_keys:
             if key not in self._data.coords:
                 kwargs.pop(key)
-        return self.wrapper_func(func='sel', inplace=inplace, **kwargs)
+        return self._wrapper_func(func='sel', inplace=inplace, **kwargs)
 
-    def wrapper_func(self, func, inplace=False, *args, **kwargs):
+    def _wrapper_func(self, func, inplace=False, *args, **kwargs):
         res = getattr(self._data, func)(*args, **kwargs)
         if type(res) is xr.Dataset:
             if inplace:
@@ -98,17 +98,23 @@ class AcclimateOutput:
             for k, v in self._agent_subcoords.items():
                 subindex_repr += "\n   - {}\t({})".format(k, len(set([v[a] for a in agent_values])))
             index_pos = _repr.find('\n  * agent') + 2
-            index_pos += _repr[index_pos:].find('\n')
+            if _repr[index_pos:].find('\n') > 0:
+                index_pos += _repr[index_pos:].find('\n')
+            else:
+                index_pos = len(_repr)
             return _repr[:index_pos] + subindex_repr + _repr[index_pos:]
         return _repr
 
     def __getattr__(self, attr):
-        if attr in dir(self._data):
+        if hasattr(self._data, attr):
             if hasattr(getattr(self._data, attr), '__call__'):
                 def res(*args, **kwargs):
-                    return self.wrapper_func(func=attr, *args, **kwargs)
+                    return self._wrapper_func(func=attr, *args, **kwargs)
                 res.__doc__ = getattr(self._data, attr).__doc__
             else:
                 res = getattr(self._data, attr)
             return res
 
+    def __getitem__(self, item):
+        return AcclimateOutput(data=self._data[item], agent_coords=self._agent_coords,
+                               agent_subcoords=self._agent_subcoords)
