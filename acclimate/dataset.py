@@ -20,40 +20,39 @@ class AcclimateOutput:
             self._agent_subcoords = agent_subcoords
         elif filename is not None:
             self._data = xr.Dataset()
-            self.load_dataset(filename=filename, start_date=start_date)
-
-    def load_dataset(self, filename, start_date=None):
-        for i_group in ['firms', 'regions']:
-            try:
-                with xr.open_dataset(filename, group=i_group) as _data:
-                    _data = _data.rename({v: "{}_{}".format(i_group, v) for v in list(_data.variables)})
-                    self._data.update(_data)
-            except OSError as e:
-                print("OS error: {0}".format(e))
-        with Dataset(filename, 'r') as ncdata:
-            agent_names = [str(a[0].decode('UTF-8')) for a in ncdata['agent'][:]]
-            agent_types = [ncdata['agent_type'][a[1]] for a in ncdata['agent'][:]]
-            agent_sectors = [ncdata['sector'][a[2]] for a in ncdata['agent'][:]]
-            agent_regions = [ncdata['region'][a[3]] for a in ncdata['agent'][:]]
-            for idx in range(len(agent_names)):
-                agent_names[idx] = agent_names[idx].split(':')[0] + ":{}".format(agent_regions[idx])
-            self._agent_coords = agent_names
-            self._agent_subcoords = {
-                'region': {a: r for a, r in zip(agent_names, agent_regions)},
-                'sector': {a: s if t == 'firm' else 'FCON' for a, s, t in
-                           zip(agent_names, agent_sectors, agent_types)},
-                'agent_type': {a: t for a, t in zip(agent_names, agent_types)}
-            }
-            if start_date is None:
-                start_date = ncdata['time'].units.split(' ')[-1]
-            coords = {
-                'time': pd.date_range(start_date, periods=len(ncdata['time']), freq='D'),
-                'agent': agent_names,
-                'region': ncdata['region'][:],
-            }
-        for coord, ticks in coords.items():
-            self._data[coord] = ticks
-        self._baseline = self._data.sel(time=self._data.time[0])
+            for i_group in ['firms', 'regions']:
+                try:
+                    with xr.open_dataset(filename, group=i_group) as _data:
+                        _data = _data.rename({v: "{}_{}".format(i_group, v) for v in list(_data.variables)})
+                        self._data.update(_data)
+                except OSError as e:
+                    print("OS error: {0}".format(e))
+            with Dataset(filename, 'r') as ncdata:
+                agent_names = [str(a[0].decode('UTF-8')) for a in ncdata['agent'][:]]
+                agent_types = [ncdata['agent_type'][a[1]] for a in ncdata['agent'][:]]
+                agent_sectors = [ncdata['sector'][a[2]] for a in ncdata['agent'][:]]
+                agent_regions = [ncdata['region'][a[3]] for a in ncdata['agent'][:]]
+                for idx in range(len(agent_names)):
+                    agent_names[idx] = agent_names[idx].split(':')[0] + ":{}".format(agent_regions[idx])
+                self._agent_coords = agent_names
+                self._agent_subcoords = {
+                    'region': {a: r for a, r in zip(agent_names, agent_regions)},
+                    'sector': {a: s if t == 'firm' else 'FCON' for a, s, t in
+                               zip(agent_names, agent_sectors, agent_types)},
+                    'agent_type': {a: t for a, t in zip(agent_names, agent_types)}
+                }
+                if start_date is None:
+                    start_date = ncdata['time'].units.split(' ')[-1]
+                coords = {
+                    'time': pd.date_range(start_date, periods=len(ncdata['time']), freq='D'),
+                    'agent': agent_names,
+                    'region': ncdata['region'][:],
+                }
+            for coord, ticks in coords.items():
+                self._data[coord] = ticks
+            self._baseline = self._data.sel(time=self._data.time[0])
+        else:
+            raise ValueError("Either both or none of data and filename were passed.")
 
     def get_agents(self, sector=None, region=None, agent_type=None):
         def remap(l, lookupdict):
@@ -80,7 +79,8 @@ class AcclimateOutput:
             agent_subindex_keys = list({'region', 'sector', 'agent_type'} & set(kwargs.keys()))
             agent_sel = np.intersect1d(agent_sel, self.get_agents(**{k: kwargs[k] for k in agent_subindex_keys}))
             if len(agent_sel) == 0:
-                print("\nWarning. Values passed for arguments {} are contradictory. No agents left with this selection.\n".format(set(kwargs.keys())))
+                print("\nWarning. Values passed for arguments {} are contradictory.".format(set(kwargs.keys())) +
+                      " No agents left with this selection.\n")
             elif num_directly_selected_agents > len(agent_sel):
                 print("\nWarning. Values passed for arguments {} are contradictory.\n".format(set(kwargs.keys())))
             kwargs['agent'] = agent_sel
