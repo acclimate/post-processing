@@ -76,11 +76,10 @@ class AcclimateOutput:
                 num_directly_selected_agents = len(agent_sel)
             agent_subindex_keys = list({'region', 'sector', 'agent_type'} & set(kwargs.keys()))
             agent_sel = np.intersect1d(agent_sel, self.get_agents(**{k: kwargs[k] for k in agent_subindex_keys}))
-            if num_directly_selected_agents > len(agent_sel):
-                if len(agent_sel) == 0:
-                    raise ValueError("Values passed for arguments {} are ambiguous. No agents left with this selection.".format(set(kwargs.keys())))
-                else:
-                    print("\nWarning. Values passed for arguments {} are ambiguous.\n".format(set(kwargs.keys())))
+            if len(agent_sel) == 0:
+                raise ValueError("Values passed for arguments {} are contradictory. No agents left with this selection.".format(set(kwargs.keys())))
+            elif num_directly_selected_agents > len(agent_sel):
+                print("\nWarning. Values passed for arguments {} are contradictory.\n".format(set(kwargs.keys())))
             kwargs['agent'] = agent_sel
             for key in agent_subindex_keys:
                 if key not in self._data.coords:
