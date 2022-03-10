@@ -2,6 +2,7 @@
 import pandas as pd
 import xarray as xr
 from netCDF4 import Dataset
+import numpy as np
 
 
 # TODO: implement baseline values --> should be separated from the rest of the data s.th. it does not get lost upon
@@ -65,17 +66,25 @@ class AcclimateOutput:
                     set(self._data.agent.values))
 
     def sel(self, inplace=False, **kwargs):
-        agent_sel = []
-        if 'agent' in kwargs:
-            agent_sel = kwargs.pop('agent')
-            if type(agent_sel) == str:
-                agent_sel = [agent_sel]
-        agent_subindex_keys = list({'region', 'sector', 'agent_type'} & set(kwargs.keys()))
-        agent_sel += self.get_agents(**{k: kwargs[k] for k in agent_subindex_keys})
-        kwargs['agent'] = agent_sel
-        for key in agent_subindex_keys:
-            if key not in self._data.coords:
-                kwargs.pop(key)
+        if 'agent' in self.coords:
+            agent_sel = self.agent.values
+            num_directly_selected_agents = 0
+            if 'agent' in kwargs:
+                agent_sel = kwargs['agent']
+                if type(agent_sel) == str:
+                    agent_sel = [agent_sel]
+                num_directly_selected_agents = len(agent_sel)
+            agent_subindex_keys = list({'region', 'sector', 'agent_type'} & set(kwargs.keys()))
+            agent_sel = np.intersect1d(agent_sel, self.get_agents(**{k: kwargs[k] for k in agent_subindex_keys}))
+            if num_directly_selected_agents > len(agent_sel):
+                if len(agent_sel) == 0:
+                    raise ValueError("Values passed for arguments {} are ambiguous. No agents left with this selection.".format(set(kwargs.keys())))
+                else:
+                    print("\nWarning. Values passed for arguments {} are ambiguous.\n".format(set(kwargs.keys())))
+            kwargs['agent'] = agent_sel
+            for key in agent_subindex_keys:
+                if key not in self._data.coords:
+                    kwargs.pop(key)
         return self._wrapper_func(func='sel', inplace=inplace, **kwargs)
 
     def _wrapper_func(self, func, inplace=False, *args, **kwargs):
