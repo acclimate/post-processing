@@ -9,11 +9,13 @@ import numpy as np
 #       modification of the data itself; any shape modification (e.g. region filtering) should be applied to the
 #       baseline too, though
 class AcclimateOutput:
-    def __init__(self, filename=None, start_date=None, data=None, agent_coords=None, agent_subcoords=None):
+    def __init__(self, filename=None, start_date=None, data=None, baseline=None, agent_coords=None,
+                 agent_subcoords=None):
         if data is not None:
             if agent_coords is None or agent_subcoords is None:
                 raise ValueError("Must pass agent coordinates and subcoordinates if data is passed.")
             self._data = data
+            self._baseline = baseline
             self._agent_coords = agent_coords
             self._agent_subcoords = agent_subcoords
         elif filename is not None:
@@ -51,6 +53,7 @@ class AcclimateOutput:
             }
         for coord, ticks in coords.items():
             self._data[coord] = ticks
+        self._baseline = self._data.sel(time=self._data.time[0])
 
     def get_agents(self, sector=None, region=None, agent_type=None):
         def remap(l, lookupdict):
