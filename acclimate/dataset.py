@@ -5,9 +5,6 @@ from netCDF4 import Dataset
 import numpy as np
 
 
-# TODO: implement baseline values --> should be separated from the rest of the data s.th. it does not get lost upon
-#       modification of the data itself; any shape modification (e.g. region filtering) should be applied to the
-#       baseline too, though
 class AcclimateOutput:
     def __init__(self, filename=None, start_date=None, data=None, baseline=None, agent_coords=None,
                  agent_subcoords=None):
