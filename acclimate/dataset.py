@@ -138,7 +138,7 @@ class AcclimateOutput:
         return _repr
 
     def __getattr__(self, attr):
-        if hasattr(xr.Dataset, attr):
+        if hasattr(self._data, attr):
             if hasattr(getattr(self._data, attr), '__call__'):
                 def res(*args, **kwargs):
                     return self._wrapper_func(func=attr, *args, **kwargs)
@@ -146,8 +146,6 @@ class AcclimateOutput:
             else:
                 res = getattr(self._data, attr)
             return res
-        elif attr in self.variables:
-            return self[attr]
 
     def __getitem__(self, item):
         return AcclimateOutput(data=self._data[item], baseline=self._baseline[item], agent_coords=self._agent_coords,
