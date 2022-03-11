@@ -107,7 +107,8 @@ class AcclimateOutput:
             self._data = self._data.sel(**kwargs)
             self._baseline = self._baseline.sel(**kwargs)
         else:
-            return AcclimateOutput(data=self._data.sel(**kwargs), baseline=self._baseline.sel(**kwargs),
+            return AcclimateOutput(data=self._data.sel(**kwargs),
+                                   baseline=self._baseline.sel(**{k: v for k, v in kwargs.items() if k != 'time'}),
                                    agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
 
     def _wrapper_func(self, func, inplace=False, *args, **kwargs):
