@@ -144,7 +144,7 @@ class AcclimateOutput:
             if attr in self._data:
                 return AcclimateOutput(data=getattr(self._data, attr), baseline=getattr(self._baseline, attr),
                                        agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
-            if hasattr(getattr(self._data, attr), '__call__'):
+            elif hasattr(getattr(self._data, attr), '__call__'):
                 def res(*args, **kwargs):
                     return self._wrapper_func(func=attr, *args, **kwargs)
                 res.__doc__ = getattr(self._data, attr).__doc__
@@ -174,6 +174,22 @@ class AcclimateOutput:
 
     def __truediv__(self, other):
         return AcclimateOutput(data=self.data / other.data, baseline=self.baseline / other.baseline,
+                               agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
+
+    def __le__(self, other):
+        return AcclimateOutput(data=self.data <= other.data, baseline=self.baseline,
+                               agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
+
+    def __lt__(self, other):
+        return AcclimateOutput(data=self.data < other.data, baseline=self.baseline,
+                               agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
+
+    def __ge__(self, other):
+        return AcclimateOutput(data=self.data >= other.data, baseline=self.baseline,
+                               agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
+
+    def __gt__(self, other):
+        return AcclimateOutput(data=self.data > other.data, baseline=self.baseline,
                                agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
 
     def __contains__(self, item):
