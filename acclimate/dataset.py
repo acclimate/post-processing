@@ -117,7 +117,8 @@ class AcclimateOutput:
             if inplace:
                 self._data = res
             else:
-                return AcclimateOutput(data=res, agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
+                return AcclimateOutput(data=res, baseline=self._baseline, agent_coords=self._agent_coords,
+                                       agent_subcoords=self._agent_subcoords)
         else:
             return res
 
@@ -140,6 +141,9 @@ class AcclimateOutput:
 
     def __getattr__(self, attr):
         if hasattr(self._data, attr):
+            if attr in self._data:
+                return AcclimateOutput(data=getattr(self._data, attr), baseline=getattr(self._baseline, attr),
+                                       agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
             if hasattr(getattr(self._data, attr), '__call__'):
                 def res(*args, **kwargs):
                     return self._wrapper_func(func=attr, *args, **kwargs)
