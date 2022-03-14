@@ -122,7 +122,7 @@ class AcclimateOutput:
             return res
 
     def __repr__(self):
-        _repr = self._data.__repr__()
+        _repr = super().__repr__() + "\n" + self._data.__repr__()
         if 'agent' in self._data.coords:
             agent_values = self._data.agent.values
             if agent_values.shape == ():
