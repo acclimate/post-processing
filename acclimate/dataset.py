@@ -113,7 +113,7 @@ class AcclimateOutput:
 
     def _wrapper_func(self, func, inplace=False, *args, **kwargs):
         res = getattr(self._data, func)(*args, **kwargs)
-        if type(res) is xr.Dataset:
+        if type(res) is xr.Dataset or type(res) is xr.DataArray:
             if inplace:
                 self._data = res
             else:
