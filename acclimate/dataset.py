@@ -171,3 +171,8 @@ class AcclimateOutput:
     def __truediv__(self, other):
         return AcclimateOutput(data=self.data / other.data, baseline=self.baseline / other.baseline,
                                agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
+
+    def __contains__(self, item):
+        if item in self._data != item in self._baseline:
+            raise ValueError("Something went wrong here. _data and _baseline objects should contain the same variables.")
+        return item in self._data & item in self._baseline
