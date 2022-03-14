@@ -173,6 +173,8 @@ class AcclimateOutput:
                                agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
 
     def __contains__(self, item):
-        if item in self._data != item in self._baseline:
+        data_contains = item in self._data
+        baseline_contains = item in self._baseline
+        if data_contains != baseline_contains:
             raise ValueError("Something went wrong here. _data and _baseline objects should contain the same variables.")
-        return item in self._data & item in self._baseline
+        return data_contains and baseline_contains
