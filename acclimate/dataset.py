@@ -7,7 +7,7 @@ import numpy as np
 
 class AcclimateOutput:
     def __init__(self, filename=None, start_date=None, data=None, baseline=None, agent_coords=None,
-                 agent_subcoords=None):
+                 agent_subcoords=None, old_output_format=False):
         if data is not None:
             if agent_coords is None or agent_subcoords is None:
                 raise ValueError("Must pass agent coordinates and subcoordinates if data is passed.")
@@ -146,7 +146,7 @@ class AcclimateOutput:
                                        agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
             elif hasattr(getattr(self._data, attr), '__call__'):
                 def res(*args, **kwargs):
-                    return self._wrapper_func(func=attr, *args, **kwargs)
+                    return self._wrapper_func(attr, False, *args, **kwargs)
                 res.__doc__ = getattr(self._data, attr).__doc__
             else:
                 res = getattr(self._data, attr)
@@ -157,40 +157,44 @@ class AcclimateOutput:
                                agent_subcoords=self._agent_subcoords)
 
     def __add__(self, other):
-        return AcclimateOutput(data=self.data + other.data, baseline=self.baseline + other.baseline,
+        return AcclimateOutput(data=self.data + (other.data if type(other) is self.__class__ else other), baseline=self.baseline + other.baseline,
                                agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
 
     def __sub__(self, other):
-        return AcclimateOutput(data=self.data - other.data, baseline=self.baseline - other.baseline,
+        return AcclimateOutput(data=self.data - (other.data if type(other) is self.__class__ else other), baseline=self.baseline - other.baseline,
                                agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
 
     def __mul__(self, other):
-        return AcclimateOutput(data=self.data * other.data, baseline=self.baseline * other.baseline,
+        return AcclimateOutput(data=self.data * (other.data if type(other) is self.__class__ else other), baseline=self.baseline * other.baseline,
                                agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
 
     def __pow__(self, other):
-        return AcclimateOutput(data=self.data ** other.data, baseline=self.baseline ** other.baseline,
+        return AcclimateOutput(data=self.data ** (other.data if type(other) is self.__class__ else other), baseline=self.baseline ** other.baseline,
                                agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
 
     def __truediv__(self, other):
-        return AcclimateOutput(data=self.data / other.data, baseline=self.baseline / other.baseline,
+        return AcclimateOutput(data=self.data / (other.data if type(other) is self.__class__ else other), baseline=self.baseline / other.baseline,
                                agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
 
     def __le__(self, other):
-        return AcclimateOutput(data=self.data <= other.data, baseline=self.baseline,
-                               agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
+        return AcclimateOutput(data=self.data <= (other.data if type(other) is self.__class__ else other),
+                               baseline=self.baseline, agent_coords=self._agent_coords,
+                               agent_subcoords=self._agent_subcoords)
 
     def __lt__(self, other):
-        return AcclimateOutput(data=self.data < other.data, baseline=self.baseline,
-                               agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
+        return AcclimateOutput(data=self.data < (other.data if type(other) is self.__class__ else other),
+                               baseline=self.baseline, agent_coords=self._agent_coords,
+                               agent_subcoords=self._agent_subcoords)
 
     def __ge__(self, other):
-        return AcclimateOutput(data=self.data >= other.data, baseline=self.baseline,
-                               agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
+        return AcclimateOutput(data=self.data >= (other.data if type(other) is self.__class__ else other),
+                               baseline=self.baseline, agent_coords=self._agent_coords,
+                               agent_subcoords=self._agent_subcoords)
 
     def __gt__(self, other):
-        return AcclimateOutput(data=self.data > other.data, baseline=self.baseline,
-                               agent_coords=self._agent_coords, agent_subcoords=self._agent_subcoords)
+        return AcclimateOutput(data=self.data > (other.data if type(other) is self.__class__ else other),
+                               baseline=self.baseline, agent_coords=self._agent_coords,
+                               agent_subcoords=self._agent_subcoords)
 
     def __contains__(self, item):
         data_contains = item in self._data
