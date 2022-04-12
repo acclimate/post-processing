@@ -25,10 +25,6 @@ class AcclimateOutput:
     def baseline(self):
         return self._baseline
 
-    @property
-    def agent_coords(self):
-        return self._agent_coords
-
     def load_dataset(self, filename, start_date):
         for i_group in ['firms', 'regions', 'storages', 'consumers']:  # TODO: use groups to be loaded as parameter?
             try:
@@ -44,7 +40,6 @@ class AcclimateOutput:
             agent_regions = [ncdata['region'][a[3]] for a in ncdata['agent'][:]]
             for idx in range(len(agent_names)):
                 agent_names[idx] = agent_names[idx].split(':')[0] + ":{}".format(agent_regions[idx])
-            self._agent_coords = agent_names
             if start_date is None:
                 start_date = ncdata['time'].units.split(' ')[-1]
             coords = {
