@@ -30,9 +30,9 @@ class AcclimateOutput:
         return self._agent_coords
 
     def load_dataset(self, filename, start_date):
-        for i_group in ['firms', 'regions']:
+        for i_group in ['firms', 'regions', 'storages', 'consumers']:  # TODO: use groups to be loaded as parameter?
             try:
-                with xr.open_dataset(filename, group=i_group) as _data:
+                with xr.open_dataset(filename, group=i_group, chunks={"auto"}) as _data:
                     _data = _data.rename({v: "{}_{}".format(i_group, v) for v in list(_data.variables)})
                     self._data.update(_data)
             except OSError as e:
@@ -65,6 +65,7 @@ class AcclimateOutput:
                     return np.isin(lookup, v)
                 else:
                     return np.array([True] * len(lookup))
+
             return self['agent'].values[selector(sector, self['agent_sector'].values) &
                                         selector(region, self['agent_region'].values) &
                                         selector(agent_type, self['agent_type'].values)]
@@ -124,13 +125,16 @@ class AcclimateOutput:
                     coords['agent_region'][1][agent_index] = k
                 if mixed_agent_types:
                     coords['agent_type'][1][agent_index] = 'mixed'
-        new_coords = xr.Dataset(coords).groupby('agent').first().set_coords(['agent_sector', 'agent_region', 'agent_type']).coords
+        new_coords = xr.Dataset(coords).groupby('agent').first().set_coords(
+            ['agent_sector', 'agent_region', 'agent_type']).coords
         if inplace:
             self._data = getattr(self._data.assign_coords(coords).groupby('agent'), how)().assign_coords(new_coords)
-            self._baseline = getattr(self._baseline.assign_coords(coords).groupby('agent'), how)().assign_coords(new_coords)
+            self._baseline = getattr(self._baseline.assign_coords(coords).groupby('agent'), how)().assign_coords(
+                new_coords)
         else:
             res_data = getattr(self._data.assign_coords(coords).groupby('agent'), how)().assign_coords(new_coords)
-            res_baseline = getattr(self._baseline.assign_coords(coords).groupby('agent'), how)().assign_coords(new_coords)
+            res_baseline = getattr(self._baseline.assign_coords(coords).groupby('agent'), how)().assign_coords(
+                new_coords)
             return AcclimateOutput(data=res_data, baseline=res_baseline)
 
     def _wrapper_func(self, func, inplace=False, *args, **kwargs):
@@ -157,6 +161,7 @@ class AcclimateOutput:
             elif hasattr(getattr(self._data, attr), '__call__'):
                 def res(*args, **kwargs):
                     return self._wrapper_func(attr, False, *args, **kwargs)
+
                 res.__doc__ = getattr(self._data, attr).__doc__
             else:
                 res = getattr(self._data, attr)
@@ -205,5 +210,6 @@ class AcclimateOutput:
         data_contains = item in self._data
         baseline_contains = item in self._baseline
         if data_contains != baseline_contains:
-            raise ValueError("Something went wrong here. _data and _baseline objects should contain the same variables.")
+            raise ValueError(
+                "Something went wrong here. _data and _baseline objects should contain the same variables.")
         return data_contains and baseline_contains
