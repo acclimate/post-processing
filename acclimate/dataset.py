@@ -6,14 +6,18 @@ import numpy as np
 
 
 class AcclimateOutput:
-    def __init__(self, filename=None, start_date=None, data=None, baseline=None, old_output_format=False):
-        if data is not None:
+    def __init__(self, filename=None, start_date=None, data=None, baseline=None, old_output_format=False,
+                 groups_to_load=None, vars_to_load=None):
+        if data is not None and filename is None:
             self._data = data
             self._baseline = baseline
         elif filename is not None:
             self._data = xr.Dataset()
             self._baseline = xr.Dataset()
-            self.load_dataset(filename=filename, start_date=start_date)
+            if groups_to_load is None:
+                groups_to_load = ['firms', 'regions', 'storages', 'consumers']
+            self.load_dataset(filename=filename, start_date=start_date, groups_to_load=groups_to_load,
+                              vars_to_load=vars_to_load)
         else:
             raise ValueError("Either both or none of data and filename were passed.")
 
@@ -25,10 +29,12 @@ class AcclimateOutput:
     def baseline(self):
         return self._baseline
 
-    def load_dataset(self, filename, start_date):
-        for i_group in ['firms', 'regions', 'storages', 'consumers']:  # TODO: use groups to be loaded as parameter?
+    def load_dataset(self, filename, start_date, groups_to_load, vars_to_load=None):
+        for i_group in groups_to_load:
             try:
                 with xr.open_dataset(filename, group=i_group, chunks="auto") as _data:
+                    if vars_to_load is not None:
+                        _data = _data[vars_to_load]
                     _data = _data.rename({v: "{}_{}".format(i_group, v) for v in list(_data.variables)})
                     self._data.update(_data)
             except OSError as e:
