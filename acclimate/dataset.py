@@ -28,7 +28,7 @@ class AcclimateOutput:
     def load_dataset(self, filename, start_date):
         for i_group in ['firms', 'regions', 'storages', 'consumers']:  # TODO: use groups to be loaded as parameter?
             try:
-                with xr.open_dataset(filename, group=i_group, chunks={"auto"}) as _data:
+                with xr.open_dataset(filename, group=i_group, chunks="auto") as _data:
                     _data = _data.rename({v: "{}_{}".format(i_group, v) for v in list(_data.variables)})
                     self._data.update(_data)
             except OSError as e:
