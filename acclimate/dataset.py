@@ -60,7 +60,7 @@ class AcclimateOutput:
         self._baseline = self._data.sel(time=self._data.time[0])
 
     def get_agents(self, sector=None, region=None, agent_type=None):
-        if 'agent' in self:
+        if 'agent' in self.coords:
             def selector(v, lookup):
                 if v is not None:
                     return np.isin(lookup, v)
