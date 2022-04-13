@@ -82,8 +82,8 @@ class AcclimateOutput:
                 if type(agent_sel) == str:
                     agent_sel = [agent_sel]
                 num_directly_selected_agents = len(agent_sel)
-            agent_subindex_keys = list({'region', 'sector', 'agent_type'} & set(kwargs.keys()))
-            agent_sel = np.intersect1d(agent_sel, self.get_agents(**{k: kwargs[k] for k in agent_subindex_keys}))
+            agent_subindex_keys = list({'region', 'sector', 'agent_region', 'agent_sector', 'agent_type'} & set(kwargs.keys()))
+            agent_sel = np.intersect1d(agent_sel, self.get_agents(**{k.replace('agent_', '') if k != 'agent_type' else k: kwargs[k] for k in agent_subindex_keys}))
             if len(agent_sel) == 0:
                 print("\nWarning. Values passed for arguments {} are contradictory.".format(set(kwargs.keys())) +
                       " No agents left with this selection.\n")
@@ -91,7 +91,7 @@ class AcclimateOutput:
                 print("\nWarning. Values passed for arguments {} are contradictory.\n".format(set(kwargs.keys())))
             kwargs['agent'] = agent_sel
             for key in agent_subindex_keys:
-                if key not in self._data.coords:
+                if key in ['agent_region', 'agent_sector', 'agent_type']:
                     kwargs.pop(key)
         if inplace:
             self._data = self._data.sel(**kwargs)
