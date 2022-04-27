@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import copy
+
 import pandas as pd
 import xarray as xr
 from netCDF4 import Dataset
@@ -100,43 +102,43 @@ class AcclimateOutput:
             return AcclimateOutput(data=self._data.sel(**kwargs),
                                    baseline=self._baseline.sel(**{k: v for k, v in kwargs.items() if k != 'time'}))
 
-    def group_agents(self, dim: str, mapping: dict = None, how: str = 'sum', drop: bool = False, inplace: bool = False):
+    def group_agents(self, dim: str, group, name: str, how: str = 'sum', drop: bool = False, inplace: bool = False):
         if dim not in ['region', 'sector']:
             raise ValueError("Cannot group along dimension {}".format(dim))
-        coords = {c: ('agent', c_.values) for c, c_ in self.coords.items() if c in
-                  ['agent', 'agent_sector', 'agent_region', 'agent_type']}
-        for k, v in mapping.items():
-            if k in self.__getattr__('agent_' + dim):
-                print("{} already exists in dimension {}".format(k, 'agent_' + dim))
-                continue
-            vals_to_group = [_v for _v in v if _v in self['agent_' + dim]]
-            if len(vals_to_group) == 0:
-                print("One or more of the values for new entry '{}' could not be found in dim '{}'".format(k, dim))
-            elif len(vals_to_group) < len(v):
-                print("None of the values for new entry '{}' could not be found in dim '{}'".format(k, dim))
-            agents_to_group = self.get_agents(**{dim: vals_to_group})
-            mixed_agent_types = (dim == 'sector' and len(v) > 1 and 'FCON' in v)
-            for a in agents_to_group:
-                agent_index = np.where(self['agent'].values == a)[0][0]
-                if dim == 'sector':
-                    coords['agent'][1][agent_index] = "{}:{}".format(a.split(':')[1], k)
-                    coords['agent_sector'][1][agent_index] = k
-                elif dim == 'region':
-                    coords['agent'][1][agent_index] = "{}:{}".format(k, a.split(':')[0])
-                    coords['agent_region'][1][agent_index] = k
-                if mixed_agent_types:
-                    coords['agent_type'][1][agent_index] = 'mixed'
-        new_coords = xr.Dataset(coords).groupby('agent').first().set_coords(
-            ['agent_sector', 'agent_region', 'agent_type']).coords
+        coords = {c: ('agent', copy.deepcopy(self.coords[c].values)) for c in
+                  ['agent', 'agent_sector', 'agent_region', 'agent_type'] if c in self.coords}
+        if name in self.__getattr__('agent_' + dim):
+            print("{} already exists in dimension {}".format(name, 'agent_' + dim))
+            return
+        vals_to_group = [_v for _v in group if _v in self['agent_' + dim]]
+        if len(vals_to_group) == 0:
+            print("One or more of the values for new entry '{}' could not be found in dim '{}'".format(name, dim))
+        elif len(vals_to_group) < len(group):
+            print("None of the values for new entry '{}' could not be found in dim '{}'".format(name, dim))
+        agents_to_group = self.get_agents(**{dim: vals_to_group})
+        mixed_agent_types = (dim == 'sector' and len(group) > 1 and 'FCON' in group)
+        for a in agents_to_group:
+            agent_index = np.where(self['agent'].values == a)[0][0]
+            if dim == 'sector':
+                coords['agent'][1][agent_index] = "{}:{}".format(a.split(':')[1], name)
+                coords['agent_sector'][1][agent_index] = name
+            elif dim == 'region':
+                coords['agent'][1][agent_index] = "{}:{}".format(name, a.split(':')[0])
+                coords['agent_region'][1][agent_index] = name
+            if mixed_agent_types:
+                coords['agent_type'][1][agent_index] = 'mixed'
+        new_coords = xr.Dataset(coords).groupby('agent').first().set_coords(['agent_sector', 'agent_region', 'agent_type']).coords
+        coords = {'agent': coords['agent']}
+        new_data = getattr(self._data.assign_coords(coords).groupby('agent'), how)().assign_coords(new_coords)
+        new_baseline = getattr(self._baseline.assign_coords(coords).groupby('agent'), how)().assign_coords(new_coords)
+        if not drop:
+            new_data = xr.concat([self._data, new_data], dim='agent')
+            new_baseline = xr.concat([self._baseline, new_baseline], dim='agent')
         if inplace:
-            self._data = getattr(self._data.assign_coords(coords).groupby('agent'), how)().assign_coords(new_coords)
-            self._baseline = getattr(self._baseline.assign_coords(coords).groupby('agent'), how)().assign_coords(
-                new_coords)
+            self._data = new_data
+            self._baseline = new_baseline
         else:
-            res_data = getattr(self._data.assign_coords(coords).groupby('agent'), how)().assign_coords(new_coords)
-            res_baseline = getattr(self._baseline.assign_coords(coords).groupby('agent'), how)().assign_coords(
-                new_coords)
-            return AcclimateOutput(data=res_data, baseline=res_baseline)
+            return AcclimateOutput(data=new_data, baseline=new_baseline)
 
     def _wrapper_func(self, func, inplace=False, *args, **kwargs):
         res = getattr(self._data, func)(*args, **kwargs)
