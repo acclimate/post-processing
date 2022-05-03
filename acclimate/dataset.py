@@ -37,7 +37,7 @@ class AcclimateOutput:
             if i_group == 'firms' and old_output_format:
                 _i_group = 'agents'
             try:
-                with xr.load_dataset(filename, group=_i_group, chunks="auto", decode_times=False) as _data:
+                with xr.open_dataset(filename, group=_i_group, chunks="auto", decode_times=False) as _data:
                     if vars_to_load is not None:
                         _data = _data[vars_to_load]
                     _data = _data.rename({v: "{}_{}".format(i_group, v) for v in list(_data.variables)})
