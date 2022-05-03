@@ -19,7 +19,7 @@ class AcclimateOutput:
             if groups_to_load is None:
                 groups_to_load = ['firms', 'regions', 'storages', 'consumers']
             self.load_dataset(filename=filename, start_date=start_date, groups_to_load=groups_to_load,
-                              vars_to_load=vars_to_load)
+                              vars_to_load=vars_to_load, old_output_format=old_output_format)
         else:
             raise ValueError("Either both or none of data and filename were passed.")
 
@@ -31,25 +31,40 @@ class AcclimateOutput:
     def baseline(self):
         return self._baseline
 
-    def load_dataset(self, filename, start_date, groups_to_load, vars_to_load=None):
+    def load_dataset(self, filename, start_date, groups_to_load, vars_to_load=None, old_output_format=False):
         for i_group in groups_to_load:
+            _i_group = i_group
+            if i_group == 'firms' and old_output_format:
+                _i_group = 'agents'
             try:
-                with xr.open_dataset(filename, group=i_group, chunks="auto") as _data:
+                with xr.load_dataset(filename, group=_i_group, chunks="auto", decode_times=False) as _data:
                     if vars_to_load is not None:
                         _data = _data[vars_to_load]
                     _data = _data.rename({v: "{}_{}".format(i_group, v) for v in list(_data.variables)})
+                    if old_output_format and i_group in ['firms', 'storages']:  # TODO: which groups besides firms?
+                        _data = _data.rename({'sector': 'agent_sector', 'region': 'agent_region'})
+                        _data = _data.stack({'agent': ['agent_sector', 'agent_region']})
                     self._data.update(_data)
             except OSError as e:
                 print("OS error: {0}".format(e))
         with Dataset(filename, 'r') as ncdata:
-            agent_names = [str(a[0].decode('UTF-8')) for a in ncdata['agent'][:]]
-            agent_types = [ncdata['agent_type'][a[1]] for a in ncdata['agent'][:]]
-            agent_sectors = [ncdata['sector'][a[2]] for a in ncdata['agent'][:]]
-            agent_regions = [ncdata['region'][a[3]] for a in ncdata['agent'][:]]
-            for idx in range(len(agent_names)):
-                agent_names[idx] = agent_names[idx].split(':')[0] + ":{}".format(agent_regions[idx])
-            if start_date is None:
-                start_date = ncdata['time'].units.split(' ')[-1]
+            if not old_output_format:
+                agent_names = [str(a[0].decode('UTF-8')) for a in ncdata['agent'][:]]
+                agent_types = [ncdata['agent_type'][a[1]] for a in ncdata['agent'][:]]
+                agent_sectors = [ncdata['sector'][a[2]] for a in ncdata['agent'][:]]
+                agent_regions = [ncdata['region'][a[3]] for a in ncdata['agent'][:]]
+                for idx in range(len(agent_names)):
+                    agent_names[idx] = agent_names[idx].split(':')[0] + ":{}".format(agent_regions[idx])
+                if start_date is None:
+                    start_date = ncdata['time'].units.split(' ')[-1]
+            else:
+                agent_sectors = [ncdata['sector'][s_idx] for s_idx in self._data.agent_sector.values]
+                agent_regions = [ncdata['region'][r_idx] for r_idx in self._data.agent_region.values]
+                agent_names = ["{}:{}".format(a[0], a[1]) for a in zip(agent_sectors, agent_regions)]
+                agent_types = ['consumer' if s == 'FCON' else 'firm' for s in agent_sectors]
+                if start_date is None:
+                    start_date = "2000-01-01"
+                self._data = self._data.drop('agent')
             coords = {
                 'time': pd.date_range(start_date, periods=len(ncdata['time']), freq='D'),
                 'agent': agent_names,
@@ -105,7 +120,7 @@ class AcclimateOutput:
     def group_agents(self, dim: str, group, name: str, how: str = 'sum', drop: bool = False, inplace: bool = False):
         if dim not in ['region', 'sector']:
             raise ValueError("Cannot group along dimension {}".format(dim))
-        coords = {c: ('agent', copy.deepcopy(self.coords[c].values)) for c in
+        coords = {c: ('agent', list(self.coords[c].values)) for c in
                   ['agent', 'agent_sector', 'agent_region', 'agent_type'] if c in self.coords}
         if name in self.__getattr__('agent_' + dim):
             print("{} already exists in dimension {}".format(name, 'agent_' + dim))
@@ -117,20 +132,27 @@ class AcclimateOutput:
             print("None of the values for new entry '{}' could not be found in dim '{}'".format(name, dim))
         agents_to_group = self.get_agents(**{dim: vals_to_group})
         mixed_agent_types = (dim == 'sector' and len(group) > 1 and 'FCON' in group)
+        new_agents = []
         for a in agents_to_group:
             agent_index = np.where(self['agent'].values == a)[0][0]
             if dim == 'sector':
-                coords['agent'][1][agent_index] = "{}:{}".format(a.split(':')[1], name)
+                new_name = "{}:{}".format(name, a.split(':')[1])
+                coords['agent'][1][agent_index] = new_name
                 coords['agent_sector'][1][agent_index] = name
             elif dim == 'region':
-                coords['agent'][1][agent_index] = "{}:{}".format(name, a.split(':')[0])
+                new_name = "{}:{}".format(a.split(':')[0], name)
+                coords['agent'][1][agent_index] = new_name
                 coords['agent_region'][1][agent_index] = name
+            if new_name not in new_agents:
+                new_agents.append(new_name)
             if mixed_agent_types:
                 coords['agent_type'][1][agent_index] = 'mixed'
         new_coords = xr.Dataset(coords).groupby('agent').first().set_coords(['agent_sector', 'agent_region', 'agent_type']).coords
         coords = {'agent': coords['agent']}
         new_data = getattr(self._data.assign_coords(coords).groupby('agent'), how)().assign_coords(new_coords)
+        new_data = new_data.sel(agent=new_agents)
         new_baseline = getattr(self._baseline.assign_coords(coords).groupby('agent'), how)().assign_coords(new_coords)
+        new_baseline = new_baseline.sel(agent=new_agents)
         if not drop:
             new_data = xr.concat([self._data, new_data], dim='agent')
             new_baseline = xr.concat([self._baseline, new_baseline], dim='agent')
