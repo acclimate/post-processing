@@ -9,7 +9,7 @@ import numpy as np
 
 class AcclimateOutput:
     def __init__(self, filename=None, start_date=None, data=None, baseline=None, old_output_format=False,
-                 groups_to_load=None, vars_to_load=None):
+                 groups_to_load=None, vars_to_load=None, lazy_loading=True):
         if data is not None and filename is None:
             self._data = data
             self._baseline = baseline
@@ -19,7 +19,7 @@ class AcclimateOutput:
             if groups_to_load is None:
                 groups_to_load = ['firms', 'regions', 'storages', 'consumers']
             self.load_dataset(filename=filename, start_date=start_date, groups_to_load=groups_to_load,
-                              vars_to_load=vars_to_load, old_output_format=old_output_format)
+                              vars_to_load=vars_to_load, old_output_format=old_output_format, lazy_loading=lazy_loading)
         else:
             raise ValueError("Either both or none of data and filename were passed.")
 
@@ -31,13 +31,18 @@ class AcclimateOutput:
     def baseline(self):
         return self._baseline
 
-    def load_dataset(self, filename, start_date, groups_to_load, vars_to_load=None, old_output_format=False):
+    def load_dataset(self, filename, start_date, groups_to_load, vars_to_load=None, old_output_format=False,
+                     lazy_loading=True):
         for i_group in groups_to_load:
             _i_group = i_group
             if i_group == 'firms' and old_output_format:
                 _i_group = 'agents'
+            if lazy_loading:
+                loading_func = xr.open_dataset
+            else:
+                loading_func = xr.load_dataset
             try:
-                with xr.open_dataset(filename, group=_i_group, chunks="auto", decode_times=False) as _data:
+                with loading_func(filename, group=_i_group, chunks="auto", decode_times=False) as _data:
                     if vars_to_load is not None:
                         _data = _data[vars_to_load]
                     _data = _data.rename({v: "{}_{}".format(i_group, v) for v in list(_data.variables)})
