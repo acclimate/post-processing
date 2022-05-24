@@ -200,6 +200,10 @@ class AcclimateOutput:
     def __getitem__(self, item):
         return AcclimateOutput(data=self._data[item], baseline=self._baseline[item])
 
+    def __setitem__(self, key, value):
+        self._data.__setitem__(key, value)
+        self._baseline.__setitem__(key, value)
+
     def __add__(self, other):
         return AcclimateOutput(data=self.data + (other.data if type(other) is self.__class__ else other),
                                baseline=self.baseline + other.baseline)
