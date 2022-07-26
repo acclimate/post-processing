@@ -48,6 +48,8 @@ def create_colormap(name, colors, alphas=None, xs=None):
     return res
 
 
+# pathespickle files as well as the script to generate these can be found on the cluster at
+# /p/projects/acclimate/data/plotting
 def make_map(
         patchespickle_file,
         regions,
