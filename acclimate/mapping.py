@@ -184,10 +184,6 @@ def make_map(
         else:
             validpatches.append(EmptyPatch())
 
-    # for r, (level, subregions, patch) in patches.items():
-    #     if not level and (r not in ignore_regions and subregions.isdisjoint(regions_with_data)):
-    #         invpatches.append(patch)
-
     ax.add_collection(
         PatchCollection(
             invpatches,
@@ -241,31 +237,3 @@ def make_map(
         # plt.subplots_adjust(bottom=0.02, top=0.98, left=0.05, right=0.9)
         plt.tight_layout()
         fig.savefig(outfile, dpi=300)
-
-
-cm = create_colormap("custom", ["red", "white", "blue"], xs=[0, 0.6667, 1])
-
-
-def do_plot(d, label, numbering, fig, ax, cax, cm=None):
-    # d = pd.read_csv(filename)
-    regions = d['region'].array
-    data = d["consumption_deviation"].array
-    # if min(data) < 0:
-    #     cm = create_colormap("custom", ["red", "white", "blue"], xs=[0, -min(data) / (max(data) - min(data)), 1])
-    # else:
-    #     cm = create_colormap("custom", ["white", "blue"], xs=[0, 1])
-    if cm is None:
-        cm = create_colormap("custom", ["red", "white", "blue"], xs=[0, 0.6667, 1])
-
-    make_map(
-        patchespickle_file="../data/external/maps/map_robinson_0.1simplified.pkl.gz",
-        regions=regions,
-        data=data,
-        y_ticks=[-1.0, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5],
-        y_label=label,
-        numbering=numbering,
-        extend_c="both",
-        ax=fig.add_subplot(ax),
-        cax=fig.add_subplot(cax),
-        cm=cm,
-    )
