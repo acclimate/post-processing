@@ -203,7 +203,7 @@ class AcclimateOutput:
 
     def _wrapper_func(self, func, inplace=False, *args, **kwargs):
         res = getattr(self._data, func)(*args, **kwargs)
-        res_baseline = None
+        res_baseline = self._baseline
         if func in ['sel']:
             res_baseline = getattr(self._baseline, func)(*args, **kwargs)
         if type(res) is xr.Dataset or type(res) is xr.DataArray or type(res) is xr.core.groupby.DatasetGroupBy:
