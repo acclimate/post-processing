@@ -254,6 +254,35 @@ WORLD_REGIONS = {
         "ESP",
         "MLT",
     ],
+    "EU27": [
+        "BGR",
+        "FIN",
+        "ROU",
+        "BEL",
+        "HUN",
+        "GRC",
+        "LTU",
+        "SWE",
+        "AUT",
+        "PRT",
+        "SVN",
+        "SVK",
+        "HRV",
+        "DEU",
+        "NLD",
+        "LVA",
+        "IRL",
+        "CZE",
+        "LUX",
+        "FRA",
+        "DNK",
+        "ITA",
+        "CYP",
+        "POL",
+        "EST",
+        "ESP",
+        "MLT",
+    ],
     "OECD": [
         "AUS",
         "AUT",
@@ -845,3 +874,7 @@ consumption_baskets_index_name = dict(zip(indizes_baskets, basket_names))
 
 def basket_map(basket_index):
     return consumption_baskets_index_name[basket_index]
+
+
+import math
+golden = (1 + math.sqrt(5)) / 2

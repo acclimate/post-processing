@@ -50,8 +50,11 @@ class AcclimateOutput:
                 agent_names[idx] = agent_names[idx].split(':')[0] + ":{}".format(agent_regions[idx])
             if start_date is None:
                 start_date = ncdata['time'].units.split(' ')[-1]
+                time = pd.date_range(start_date, periods=len(ncdata['time']), freq='D')
+            else:
+                time = ncdata['time'][:]
             coords = {
-                'time': pd.date_range(start_date, periods=len(ncdata['time']), freq='D'),
+                'time': time,
                 'agent': agent_names,
                 'agent_region': ('agent', agent_regions),
                 'agent_sector': ('agent', [s if t == 'firm' else 'FCON' for s, t in zip(agent_sectors, agent_types)]),
