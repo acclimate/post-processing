@@ -9,17 +9,18 @@ import numpy as np
 
 class AcclimateOutput:
     def __init__(self, filename=None, start_date=None, data=None, baseline=None, old_output_format=False,
-                 groups_to_load=None, vars_to_load=None):
+                 groups_to_load=None, vars_to_load=None, lazy_loading=True, no_baseline=False):
         if data is not None and filename is None:
             self._data = data
-            self._baseline = baseline
+            self._baseline = None if no_baseline else baseline
         elif filename is not None:
             self._data = xr.Dataset()
-            self._baseline = xr.Dataset()
+            self._baseline = None if no_baseline else xr.Dataset()
             if groups_to_load is None:
                 groups_to_load = ['firms', 'regions', 'storages', 'consumers']
             self.load_dataset(filename=filename, start_date=start_date, groups_to_load=groups_to_load,
-                              vars_to_load=vars_to_load)
+                              vars_to_load=vars_to_load, old_output_format=old_output_format, lazy_loading=lazy_loading,
+                              no_baseline=no_baseline)
         else:
             raise ValueError("Either both or none of data and filename were passed.")
 
@@ -31,13 +32,24 @@ class AcclimateOutput:
     def baseline(self):
         return self._baseline
 
-    def load_dataset(self, filename, start_date, groups_to_load, vars_to_load=None):
+    def load_dataset(self, filename, start_date, groups_to_load, vars_to_load=None, old_output_format=False,
+                     lazy_loading=True, no_baseline=False):
         for i_group in groups_to_load:
+            _i_group = i_group
+            if i_group == 'firms' and old_output_format:
+                _i_group = 'agents'
+            if lazy_loading:
+                loading_func = xr.open_dataset
+            else:
+                loading_func = xr.load_dataset
             try:
-                with xr.open_dataset(filename, group=i_group, chunks="auto") as _data:
+                with loading_func(filename, group=_i_group, chunks="auto", decode_times=False) as _data:
                     if vars_to_load is not None:
                         _data = _data[vars_to_load]
                     _data = _data.rename({v: "{}_{}".format(i_group, v) for v in list(_data.variables)})
+                    if old_output_format and i_group in ['firms', 'storages']:  # TODO: which groups besides firms?
+                        _data = _data.rename({'sector': 'agent_sector', 'region': 'agent_region'})
+                        _data = _data.stack({'agent': ['agent_sector', 'agent_region']})
                     self._data.update(_data)
             except OSError as e:
                 print("OS error: {0}".format(e))
@@ -48,11 +60,29 @@ class AcclimateOutput:
             agent_regions = [ncdata['region'][a[3]] for a in ncdata['agent'][:]]
             for idx in range(len(agent_names)):
                 agent_names[idx] = agent_names[idx].split(':')[0] + ":{}".format(agent_regions[idx])
-            if start_date is None:
-                start_date = ncdata['time'].units.split(' ')[-1]
-                time = pd.date_range(start_date, periods=len(ncdata['time']), freq='D')
+            if not old_output_format:
+                agent_names = [str(a[0].decode('UTF-8')) for a in ncdata['agent'][:]]
+                agent_types = [ncdata['agent_type'][a[1]] for a in ncdata['agent'][:]]
+                agent_sectors = [ncdata['sector'][a[2]] for a in ncdata['agent'][:]]
+                agent_regions = [ncdata['region'][a[3]] for a in ncdata['agent'][:]]
+                for idx in range(len(agent_names)):
+                    agent_names[idx] = agent_names[idx].split(':')[0] + ":{}".format(agent_regions[idx])
+                if start_date is None:
+                    start_date = ncdata['time'].units.split(' ')[-1]
+                    time = pd.date_range(start_date, periods=len(ncdata['time']), freq='D')
+                else:
+                    time = ncdata['time'][:]
             else:
-                time = ncdata['time'][:]
+                agent_sectors = [ncdata['sector'][s_idx] for s_idx in self._data.agent_sector.values]
+                agent_regions = [ncdata['region'][r_idx] for r_idx in self._data.agent_region.values]
+                agent_names = ["{}:{}".format(a[0], a[1]) for a in zip(agent_sectors, agent_regions)]
+                agent_types = ['consumer' if s == 'FCON' else 'firm' for s in agent_sectors]
+                if start_date is None:
+                    start_date = ncdata['time'].units.split(' ')[-1]
+                    time = pd.date_range(start_date, periods=len(ncdata['time']), freq='D')
+                else:
+                    time = ncdata['time'][:]
+                self._data = self._data.drop('agent')
             coords = {
                 'time': time,
                 'agent': agent_names,
@@ -62,7 +92,8 @@ class AcclimateOutput:
                 'region': ncdata['region'][:],
             }
         self._data = self._data.assign_coords(coords)
-        self._baseline = self._data.sel(time=self._data.time[0])
+        if not no_baseline:
+            self._baseline = self._data.sel(time=self._data.time[0])
 
     def get_agents(self, sector=None, region=None, agent_type=None):
         if 'agent' in self.coords:
@@ -100,15 +131,19 @@ class AcclimateOutput:
                     kwargs.pop(key)
         if inplace:
             self._data = self._data.sel(**kwargs)
-            self._baseline = self._baseline.sel(**kwargs)
+            if self._baseline is not None:
+                self._baseline = self._baseline.sel(**kwargs)
         else:
-            return AcclimateOutput(data=self._data.sel(**kwargs),
-                                   baseline=self._baseline.sel(**{k: v for k, v in kwargs.items() if k != 'time'}))
+            new_data = self._data.sel(**kwargs)
+            new_baseline = None
+            if self._baseline is not None:
+                new_baseline = self._baseline.sel(**{k: v for k, v in kwargs.items() if k != 'time'})
+            return AcclimateOutput(data=new_data, baseline=new_baseline)
 
     def group_agents(self, dim: str, group, name: str, how: str = 'sum', drop: bool = False, inplace: bool = False):
         if dim not in ['region', 'sector']:
             raise ValueError("Cannot group along dimension {}".format(dim))
-        coords = {c: ('agent', copy.deepcopy(self.coords[c].values)) for c in
+        coords = {c: ('agent', list(self.coords[c].values)) for c in
                   ['agent', 'agent_sector', 'agent_region', 'agent_type'] if c in self.coords}
         if name in self.__getattr__('agent_' + dim):
             print("{} already exists in dimension {}".format(name, 'agent_' + dim))
@@ -120,36 +155,75 @@ class AcclimateOutput:
             print("None of the values for new entry '{}' could not be found in dim '{}'".format(name, dim))
         agents_to_group = self.get_agents(**{dim: vals_to_group})
         mixed_agent_types = (dim == 'sector' and len(group) > 1 and 'FCON' in group)
+        new_agents = []
         for a in agents_to_group:
             agent_index = np.where(self['agent'].values == a)[0][0]
             if dim == 'sector':
-                coords['agent'][1][agent_index] = "{}:{}".format(a.split(':')[1], name)
+                new_name = "{}:{}".format(name, a.split(':')[1])
+                coords['agent'][1][agent_index] = new_name
                 coords['agent_sector'][1][agent_index] = name
             elif dim == 'region':
-                coords['agent'][1][agent_index] = "{}:{}".format(name, a.split(':')[0])
+                new_name = "{}:{}".format(a.split(':')[0], name)
+                coords['agent'][1][agent_index] = new_name
                 coords['agent_region'][1][agent_index] = name
+            if new_name not in new_agents:
+                new_agents.append(new_name)
             if mixed_agent_types:
                 coords['agent_type'][1][agent_index] = 'mixed'
         new_coords = xr.Dataset(coords).groupby('agent').first().set_coords(['agent_sector', 'agent_region', 'agent_type']).coords
         coords = {'agent': coords['agent']}
         new_data = getattr(self._data.assign_coords(coords).groupby('agent'), how)().assign_coords(new_coords)
-        new_baseline = getattr(self._baseline.assign_coords(coords).groupby('agent'), how)().assign_coords(new_coords)
+        new_data = new_data.sel(agent=new_agents)
+        new_baseline = None
+        if self._baseline is not None:
+            new_baseline = getattr(self._baseline.assign_coords(coords).groupby('agent'), how)().assign_coords(new_coords)
+            new_baseline = new_baseline.sel(agent=new_agents)
+            if not drop:
+                new_baseline = xr.concat([self._baseline, new_baseline], dim='agent')
         if not drop:
             new_data = xr.concat([self._data, new_data], dim='agent')
-            new_baseline = xr.concat([self._baseline, new_baseline], dim='agent')
         if inplace:
             self._data = new_data
             self._baseline = new_baseline
         else:
             return AcclimateOutput(data=new_data, baseline=new_baseline)
 
+    def aggregate_time(self, resolution, inplace=False):
+        if resolution == 'quarter':
+            timestring = "{}-Q{}"
+            baseline_division = 4
+        elif resolution == 'month':
+            timestring = "{}-{}"
+            baseline_division = 12
+        else:
+            raise ValueError("{} is not a valid argument for resolution.".format(resolution))
+        time = list(zip(self._data.time.dt.year.values, getattr(self._data.time.dt, resolution).values))
+        res_data = self._data
+        res_data[resolution] = ('time', pd.to_datetime([timestring.format(y, q) for y, q in time]))
+        res_data = res_data.groupby(resolution).sum()
+        if self._baseline is not None:
+            res_baseline = self._baseline * 365 / baseline_division
+            res_baseline[resolution] = [pd.to_datetime(timestring.format(*time[0]))]
+            res_baseline = res_baseline.drop('time')
+        else:
+            res_baseline = None
+        if inplace:
+            self._data = res_data
+            self._baseline = res_baseline
+        else:
+            return AcclimateOutput(data=res_data, baseline=res_baseline)
+
     def _wrapper_func(self, func, inplace=False, *args, **kwargs):
         res = getattr(self._data, func)(*args, **kwargs)
-        if type(res) is xr.Dataset or type(res) is xr.DataArray:
+        res_baseline = self._baseline
+        if func in ['sel']:
+            res_baseline = getattr(self._baseline, func)(*args, **kwargs)
+        if type(res) is xr.Dataset or type(res) is xr.DataArray or type(res) is xr.core.groupby.DatasetGroupBy:
             if inplace:
                 self._data = res
+                self._baseline = res_baseline
             else:
-                return AcclimateOutput(data=res, baseline=self._baseline)
+                return AcclimateOutput(data=res, baseline=res_baseline)
         else:
             return res
 
@@ -163,7 +237,8 @@ class AcclimateOutput:
     def __getattr__(self, attr):
         if hasattr(self._data, attr):
             if attr in self._data:
-                return AcclimateOutput(data=getattr(self._data, attr), baseline=getattr(self._baseline, attr))
+                return AcclimateOutput(data=getattr(self._data, attr),
+                                       baseline=getattr(self._baseline, attr) if self._baseline is not None else None)
             elif hasattr(getattr(self._data, attr), '__call__'):
                 def res(*args, **kwargs):
                     return self._wrapper_func(attr, False, *args, **kwargs)
@@ -174,7 +249,13 @@ class AcclimateOutput:
             return res
 
     def __getitem__(self, item):
-        return AcclimateOutput(data=self._data[item], baseline=self._baseline[item])
+        return AcclimateOutput(data=self._data[item],
+                               baseline=self._baseline[item] if self._baseline is not None else None)
+
+    def __setitem__(self, key, value):
+        self._data.__setitem__(key, value)
+        if self._baseline is not None:
+            self._baseline.__setitem__(key, value)
 
     def __add__(self, other):
         return AcclimateOutput(data=self.data + (other.data if type(other) is self.__class__ else other),
@@ -214,7 +295,10 @@ class AcclimateOutput:
 
     def __contains__(self, item):
         data_contains = item in self._data
-        baseline_contains = item in self._baseline
+        if self._baseline is not None:
+            baseline_contains = item in self._baseline
+        else:
+            baseline_contains = data_contains
         if data_contains != baseline_contains:
             raise ValueError(
                 "Something went wrong here. _data and _baseline objects should contain the same variables.")
