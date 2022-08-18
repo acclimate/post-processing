@@ -67,22 +67,17 @@ class AcclimateOutput:
                 agent_regions = [ncdata['region'][a[3]] for a in ncdata['agent'][:]]
                 for idx in range(len(agent_names)):
                     agent_names[idx] = agent_names[idx].split(':')[0] + ":{}".format(agent_regions[idx])
-                if start_date is None:
-                    start_date = ncdata['time'].units.split(' ')[-1]
-                    time = pd.date_range(start_date, periods=len(ncdata['time']), freq='D')
-                else:
-                    time = ncdata['time'][:]
             else:
                 agent_sectors = [ncdata['sector'][s_idx] for s_idx in self._data.agent_sector.values]
                 agent_regions = [ncdata['region'][r_idx] for r_idx in self._data.agent_region.values]
                 agent_names = ["{}:{}".format(a[0], a[1]) for a in zip(agent_sectors, agent_regions)]
                 agent_types = ['consumer' if s == 'FCON' else 'firm' for s in agent_sectors]
-                if start_date is None:
-                    start_date = ncdata['time'].units.split(' ')[-1]
-                    time = pd.date_range(start_date, periods=len(ncdata['time']), freq='D')
-                else:
-                    time = ncdata['time'][:]
                 self._data = self._data.drop('agent')
+            if start_date is None:
+                time = ncdata['time'][:]
+            else:
+                start_date = ncdata['time'].units.split(' ')[-1]
+                time = pd.date_range(start_date, periods=len(ncdata['time']), freq='D')
             coords = {
                 'time': time,
                 'agent': agent_names,
