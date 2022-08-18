@@ -74,10 +74,9 @@ class AcclimateOutput:
                 agent_types = ['consumer' if s == 'FCON' else 'firm' for s in agent_sectors]
                 self._data = self._data.drop('agent')
             if start_date is None:
-                time = ncdata['time'][:]
-            else:
                 start_date = ncdata['time'].units.split(' ')[-1]
-                time = pd.date_range(start_date, periods=len(ncdata['time']), freq='D')
+            freq = str(ncdata['time'][:][1]) + "D"  # N.B. date needs to be measured in days
+            time = pd.date_range(start_date, periods=len(ncdata['time']), freq=freq)
             coords = {
                 'time': time,
                 'agent': agent_names,
