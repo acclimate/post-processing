@@ -248,7 +248,7 @@ class AcclimateOutput:
 
     def __setitem__(self, key, value):
         self._data.__setitem__(key, value)
-        if self._baseline is not None:
+        if self._baseline is not None and key != 'time':
             self._baseline.__setitem__(key, value)
 
     def __add__(self, other):
