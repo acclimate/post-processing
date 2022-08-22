@@ -231,7 +231,7 @@ class AcclimateOutput:
 
     def __getattr__(self, attr):
         if hasattr(self._data, attr):
-            if attr in self._data:
+            if type(self._data) == xr.Dataset and attr in self._data:
                 return AcclimateOutput(data=getattr(self._data, attr),
                                        baseline=getattr(self._baseline, attr) if self._baseline is not None else None)
             elif hasattr(getattr(self._data, attr), '__call__'):
