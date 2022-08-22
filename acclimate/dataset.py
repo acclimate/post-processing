@@ -52,7 +52,7 @@ class AcclimateOutput:
                         _data = _data.stack({'agent': ['agent_sector', 'agent_region']})
                     self._data.update(_data)
             except OSError as e:
-                if '[Errno group not found' not in e:
+                if '[Errno group not found' not in str(e):
                     print("OS error: {0}".format(e))
         with Dataset(filename, 'r') as ncdata:
             agent_names = [str(a[0].decode('UTF-8')) for a in ncdata['agent'][:]]
