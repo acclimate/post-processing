@@ -131,7 +131,7 @@ class AcclimateOutput:
             new_data = self._data.sel(**kwargs)
             new_baseline = None
             if self._baseline is not None:
-                new_baseline = self._baseline.sel(**{k: v for k, v in kwargs.items() if k != 'time'})
+                new_baseline = self._baseline.sel(**{k: v for k, v in kwargs.items() if k not in ['time', 'quarter', 'month']})
             return AcclimateOutput(data=new_data, baseline=new_baseline)
 
     def group_agents(self, dim: str, group, name: str, how: str = 'sum', drop: bool = False, inplace: bool = False):
