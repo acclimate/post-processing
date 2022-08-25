@@ -55,12 +55,6 @@ class AcclimateOutput:
                 if '[Errno group not found' not in str(e):
                     print("OS error: {0}".format(e))
         with Dataset(filename, 'r') as ncdata:
-            agent_names = [str(a[0].decode('UTF-8')) for a in ncdata['agent'][:]]
-            agent_types = [ncdata['agent_type'][a[1]] for a in ncdata['agent'][:]]
-            agent_sectors = [ncdata['sector'][a[2]] for a in ncdata['agent'][:]]
-            agent_regions = [ncdata['region'][a[3]] for a in ncdata['agent'][:]]
-            for idx in range(len(agent_names)):
-                agent_names[idx] = agent_names[idx].split(':')[0] + ":{}".format(agent_regions[idx])
             if not old_output_format:
                 agent_names = [str(a[0].decode('UTF-8')) for a in ncdata['agent'][:]]
                 agent_types = [ncdata['agent_type'][a[1]] for a in ncdata['agent'][:]]
@@ -184,6 +178,7 @@ class AcclimateOutput:
             return AcclimateOutput(data=new_data, baseline=new_baseline)
 
     def aggregate_time(self, resolution, inplace=False):
+        print("This function should no longer be used. Use 'resample' method provided by xarray instead.")
         if resolution == 'quarter':
             timestring = "{}-Q{}"
             baseline_division = 4
