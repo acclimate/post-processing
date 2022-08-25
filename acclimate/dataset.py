@@ -249,19 +249,19 @@ class AcclimateOutput:
 
     def __add__(self, other):
         return AcclimateOutput(data=self.data + (other.data if type(other) is self.__class__ else other),
-                               baseline=self.baseline + other.baseline)
+                               baseline=self.baseline + (other.baseline if type(other) is self.__class__ else other))
 
     def __sub__(self, other):
         return AcclimateOutput(data=self.data - (other.data if type(other) is self.__class__ else other),
-                               baseline=self.baseline - other.baseline)
+                               baseline=self.baseline - (other.baseline if type(other) is self.__class__ else other))
 
     def __mul__(self, other):
         return AcclimateOutput(data=self.data * (other.data if type(other) is self.__class__ else other),
-                               baseline=self.baseline * other.baseline)
+                               baseline=self.baseline * (other.baseline if type(other) is self.__class__ else other))
 
     def __pow__(self, other):
         return AcclimateOutput(data=self.data ** (other.data if type(other) is self.__class__ else other),
-                               baseline=self.baseline ** other.baseline)
+                               baseline=self.baseline ** (other.baseline if type(other) is self.__class__ else other))
 
     def __truediv__(self, other):
         return AcclimateOutput(data=self.data / (other.data if type(other) is self.__class__ else other),
