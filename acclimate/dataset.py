@@ -9,7 +9,8 @@ import numpy as np
 
 class AcclimateOutput:
     def __init__(self, filename=None, start_date=None, data=None, baseline=None, old_output_format=False,
-                 groups_to_load=None, vars_to_load=None, lazy_loading=True, no_baseline=False):
+                 groups_to_load=None, vars_to_load=None, lazy_loading=True, no_baseline=False,
+                 scale_to_daily_levels=True):
         if data is not None and filename is None:
             self._data = data
             self._baseline = None if no_baseline else baseline
@@ -20,7 +21,7 @@ class AcclimateOutput:
                 groups_to_load = ['firms', 'regions', 'storages', 'consumers']
             self.load_dataset(filename=filename, start_date=start_date, groups_to_load=groups_to_load,
                               vars_to_load=vars_to_load, old_output_format=old_output_format, lazy_loading=lazy_loading,
-                              no_baseline=no_baseline)
+                              no_baseline=no_baseline, scale_to_daily_levels=scale_to_daily_levels)
         else:
             raise ValueError("Either both or none of data and filename were passed.")
 
@@ -33,7 +34,7 @@ class AcclimateOutput:
         return self._baseline
 
     def load_dataset(self, filename, start_date, groups_to_load, vars_to_load=None, old_output_format=False,
-                     lazy_loading=True, no_baseline=False):
+                     lazy_loading=True, no_baseline=False, scale_to_daily_levels=True):
         for i_group in groups_to_load:
             _i_group = i_group
             if i_group == 'firms' and old_output_format:
@@ -70,8 +71,8 @@ class AcclimateOutput:
                 self._data = self._data.drop('agent')
             if start_date is None:
                 start_date = ncdata['time'].units.split(' ')[-1]
-            freq = str(ncdata['time'][:][1]) + "D"  # N.B. date needs to be measured in days
-            time = pd.date_range(start_date, periods=len(ncdata['time']), freq=freq)
+            freq = ncdata['time'][:][1]  # N.B. date needs to be measured in days
+            time = pd.date_range(start_date, periods=len(ncdata['time']), freq=str(freq) + "D")
             coords = {
                 'time': time,
                 'agent': agent_names,
@@ -83,6 +84,12 @@ class AcclimateOutput:
         self._data = self._data.assign_coords(coords)
         if not no_baseline:
             self._baseline = self._data.sel(time=self._data.time[0])
+        if scale_to_daily_levels and freq > 1:
+            for var in self._data.variables:
+                if "_quantity" in var or "_value" in var:
+                    self._data[var] /= freq
+                    if not no_baseline:
+                        self._baseline[var] /= freq
 
     def get_agents(self, sector=None, region=None, agent_type=None):
         if 'agent' in self.coords:
