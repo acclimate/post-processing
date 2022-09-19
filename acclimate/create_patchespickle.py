@@ -418,13 +418,14 @@ for wr, wr_regions in world_regions.items():
         print(f'Warning: Not all subregions for {wr} were found.')
 
 
+def unary_union_(args_):
+    return [args_[0], set(args_[1]), unary_union(args_[2])]
+
+
 with Pool() as p:
-    def unary_union_(args_):
-        return [args_[0], set(args_[1]), unary_union(args_[2])]
     unions = [res for res in tqdm(p.imap(unary_union_, tmp.values()), desc='Union  ', total=len(tmp))]
 
 
-shapes_it = iter(tqdm(zip(tmp.keys(), unions), desc="Patches  "))
 # projection = get_projection(
 #     "aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
 # )
@@ -441,15 +442,20 @@ def get_patch(shape):
     else:
         return PolygonPatch(transform(projection, shape))
 
-#patches = [get_patch(s, n) for n, s in shapes_it]
+shapes_it = iter(tqdm(zip(tmp.keys(), unions), desc="Patches  "))
 patches = {}
 for k, v in shapes_it:
     patch = get_patch(v[2])
     patches[k] = (v[0], v[1], patch)
 
+shapes_it = iter(tqdm(zip(tmp.keys(), unions), desc="Patches  "))
+centroids = {}
+for k, v in shapes_it:
+    centroids[k] = transform(projection, v[2].centroid)
+
 bar = tqdm(desc="Pickle")
 pickle.dump(
-    {"projection": "robin", "patches": patches},
+    {"projection": "robin", "patches": patches, "centroids": centroids},
     gzip.GzipFile(args.patchespickle, "wb"),
     pickle.HIGHEST_PROTOCOL,
 )
