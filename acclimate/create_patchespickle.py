@@ -284,8 +284,8 @@ iso3_to_iso2 = {
 }
 
 remap_regions = {
-    'CN.HKG': 'HKG',
-    'CN.MAC': 'MAC',
+    'CHN.HKG': 'HKG',
+    'CHN.MAC': 'MAC',
 }
 
 world_regions = {
