@@ -302,7 +302,7 @@ world_regions = {
         'KWT', 'JPN', 'KGZ'
     ],
     'EUR': [
-        'BGR', 'FIN', 'ROU', 'BEL', 'GBR', 'HUN', 'BLR', 'GRC', 'AND', 'ANT', 'NOR', 'SMR', 'MDA', 'SRB', 'LTU', 'SWE',
+        'BGR', 'FIN', 'ROU', 'BEL', 'GBR', 'HUN', 'BLR', 'GRC', 'AND', 'NOR', 'SMR', 'MDA', 'SRB', 'LTU', 'SWE',
         'AUT', 'ALB', 'MKD', 'UKR', 'CHE', 'LIE', 'PRT', 'SVN', 'SVK', 'HRV', 'DEU', 'NLD', 'MNE', 'LVA', 'IRL', 'CZE',
         'LUX', 'ISL', 'FRA', 'DNK', 'ITA', 'CYP', 'BIH', 'POL', 'EST', 'ESP', 'MLT', 'MCO'
     ],
@@ -335,6 +335,9 @@ world_regions = {
     ],
     'BRICS': [
         'BRA', 'CHN', 'IND', 'RUS', 'ZAF'
+    ],
+    'ANT': [
+        'BES', 'CUW', 'SXM', 'ABW'
     ]
 }
 
@@ -398,15 +401,21 @@ for level in tqdm(range(num_levels), desc="Level    "):
     ):
         if sr['properties'][f"GID_{level}"] not in ['NA', '?']:
             ctry = sr['properties'][f"GID_0"]
+            ctry = remap_regions.get(ctry, ctry)
             s = shape(sr["geometry"])
             if level == 0:
                 tmp[ctry] = (0, [ctry], [s])
             if level == 1 and ctry in admin1_countries:
                 hasc_1 = sr['properties']['HASC_1']
-                tmp[ctry][1].append(hasc_1)
-                tmp[hasc_1] = (0, [hasc_1], [s])
+                if '.' in hasc_1:
+                    tmp[ctry][1].append(hasc_1)
+                    tmp[hasc_1] = (0, [hasc_1], [s])
+                else:
+                    ctry = sr['properties'][f"GID_1"]
+                    ctry = remap_regions.get(ctry, ctry)
+                    tmp[ctry] = (0, [ctry], [s])
         else:
-            tqdm.write("Warning: NA GID_0", file=sys.stderr)
+            tqdm.write(f"Warning: NA GID_0:\n{sr['properties']}", file=sys.stderr)
 
 for wr, wr_regions in world_regions.items():
     if np.all(np.isin(wr_regions, list(tmp.keys()))):
