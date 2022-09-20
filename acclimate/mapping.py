@@ -91,12 +91,11 @@ def make_map(
         return (p[0] * scale + t[0], p[1] * scale + t[1])
 
     projection = Transformer.from_crs("EPSG:4326", projection_name)
-    # projection = Transformer.from_crs("EPSG:4326", CRS.from_proj4(f"+proj={projection_name}"))
 
-    minx = transform(projection.transform, Point(min_lon, 0)).x
-    maxx = transform(projection.transform, Point(max_lon, 0)).x
-    miny = transform(projection.transform, Point(0, min_lat)).y
-    maxy = transform(projection.transform, Point(0, max_lat)).y
+    minx = transform(projection.transform, Point(0, min_lon)).x
+    maxx = transform(projection.transform, Point(0, max_lon)).x
+    miny = transform(projection.transform, Point(min_lat, 0)).y
+    maxy = transform(projection.transform, Point(max_lat, 0)).y
 
     fig, (ax, cax) = plt.subplots(
         ncols=2,
@@ -180,7 +179,7 @@ def make_map(
             (centroids_vmin, centroids_vmax) = centroids_v_limits
 
         def get_radius(_d):
-            return centroids_max_size * _d / centroids_vmax * (abs(ax.get_ylim()[0]) + abs(ax.get_ylim()[1]))
+            return centroids_max_size * np.sqrt(_d) / np.sqrt(centroids_vmax) * (abs(ax.get_ylim()[0]) + abs(ax.get_ylim()[1]))
         wedges = []
         for r, d in zip(centroids_regions, centroids_data):
             if r in centroids:
