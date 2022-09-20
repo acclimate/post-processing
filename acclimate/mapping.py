@@ -10,10 +10,9 @@ import numpy as np
 from matplotlib.collections import PatchCollection
 from matplotlib.colors import LinearSegmentedColormap, Normalize
 from matplotlib.patches import PathPatch, Wedge
-from matplotlib.path import Path
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from shapely.geometry import Point
 from pyproj import Transformer
+from shapely.ops import transform
+from shapely.geometry import Point
 
 
 def create_colormap(name, colors, alphas=None, xs=None):
@@ -92,11 +91,12 @@ def make_map(
         return (p[0] * scale + t[0], p[1] * scale + t[1])
 
     projection = Transformer.from_crs("EPSG:4326", projection_name)
+    # projection = Transformer.from_crs("EPSG:4326", CRS.from_proj4(f"+proj={projection_name}"))
 
-    minx = projection.transform(Point(min_lon, 0)).x
-    maxx = projection.transform(Point(max_lon, 0)).x
-    miny = projection.transform(Point(0, min_lat)).y
-    maxy = projection.transform(Point(0, max_lat)).y
+    minx = transform(projection.transform, Point(min_lon, 0)).x
+    maxx = transform(projection.transform, Point(max_lon, 0)).x
+    miny = transform(projection.transform, Point(0, min_lat)).y
+    maxy = transform(projection.transform, Point(0, max_lat)).y
 
     fig, (ax, cax) = plt.subplots(
         ncols=2,

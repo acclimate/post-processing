@@ -397,10 +397,10 @@ projection = Transformer.from_crs("EPSG:4326", args.proj)
 def get_patch(_shape):
     if args.simplified is not None:
         return PolygonPatch(
-            transform(projection, _shape.simplify(args.simplified))
+            transform(projection.transform, _shape.simplify(args.simplified))
         )
     else:
-        return PolygonPatch(transform(projection, _shape))
+        return PolygonPatch(transform(projection.transform, _shape))
 
 
 shapes_it = iter(tqdm(zip(tmp.keys(), unions), desc="Patches  "))
@@ -412,11 +412,11 @@ for k, v in shapes_it:
 shapes_it = iter(tqdm(zip(tmp.keys(), unions), desc="Patches  "))
 centroids = {}
 for k, v in shapes_it:
-    centroids[k] = transform(projection, v[2].centroid)
+    centroids[k] = transform(projection.transform, v[2].centroid)
 
 bar = tqdm(desc="Pickle")
 pickle.dump(
-    {"projection": "robin", "patches": patches, "centroids": centroids},
+    {"projection": f"{args.proj}", "patches": patches, "centroids": centroids},
     gzip.GzipFile(args.patchespickle, "wb"),
     pickle.HIGHEST_PROTOCOL,
 )
