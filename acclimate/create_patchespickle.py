@@ -5,17 +5,12 @@ import argparse
 import gzip
 import pickle
 import sys
-from functools import partial
 import numpy as np
 
 import fiona
-import pyproj
 from descartes import PolygonPatch
-from matplotlib.patches import Circle, PathPatch
-from matplotlib.path import Path
-from shapely.geometry import (
-    shape,
-)
+from pyproj import Transformer
+from shapely.geometry import shape
 from shapely.ops import transform, unary_union
 from tqdm import tqdm
 from multiprocessing import Pool
@@ -342,49 +337,11 @@ world_regions = {
 }
 
 
-def get_index(feature, level, subregions=None, mapping=iso3_to_iso2):
-    def correct_iso(iso):
-        if iso is None:
-            return None
-        if iso in mapping:
-            iso = mapping[iso]
-        return iso
-
-    iso = str(feature["GID_0"]).strip()
-    if level == 0 or (level == 1 and subregions and iso not in subregions):
-        return iso
-    elif level == 1 or (level == 2 and subregions and iso not in subregions):
-        if feature["HASC_1"] == 'NA' or "." not in str(feature["HASC_1"]).strip():
-            if '.' in feature["GID_1"]:
-                n = feature["GID_1"].split('.')[1]
-            elif '_' in feature["GID_1"]:
-                n = feature["GID_1"].split('_')[1]
-            return correct_iso(
-                "{}.{}".format(iso3_to_iso2[iso] if iso in iso3_to_iso2 else iso, n)
-            )
-        else:
-            return correct_iso(str(feature["HASC_1"]).strip())
-    else:
-        raise NotImplementedError()
-
-
-def EmptyPatch():
-    return PathPatch(Path([(0, 0)], [Path.MOVETO]))
-
-
-def get_projection(projectionstr):
-    return partial(
-        pyproj.transform,
-        pyproj.Proj("+proj=longlat +datum=WGS84 +no_defs"),
-        pyproj.Proj(f"+proj={projectionstr}"),
-    )  # e.g. proj=eqc, proj=cea, http://geotiff.maptools.org/proj_list/
-
-
 parser = argparse.ArgumentParser(description="")
 parser.add_argument("patchespickle", type=str, help="")
 parser.add_argument("--simplified", type=float, help="")
 parser.add_argument("--shapefile", type=str, default="/home/robin/data/GADM/gadm_410-levels.gpkg", help="")
-parser.add_argument("--proj", type=str, default="robin", help="")
+parser.add_argument("--proj", type=str, default="World_Robinson", help="")
 parser.add_argument("--admin1_countries", type=str, default="CHN+USA", help="")
 args = parser.parse_args()
 
@@ -434,22 +391,17 @@ def unary_union_(args_):
 with Pool() as p:
     unions = [res for res in tqdm(p.imap(unary_union_, tmp.values()), desc='Union  ', total=len(tmp))]
 
-
-# projection = get_projection(
-#     "aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs"
-# )
-projection = get_projection(
-    args.proj
-)
+projection = Transformer.from_crs("EPSG:4326", args.proj)
 
 
-def get_patch(shape):
+def get_patch(_shape):
     if args.simplified is not None:
         return PolygonPatch(
-            transform(projection, shape.simplify(args.simplified))
+            transform(projection, _shape.simplify(args.simplified))
         )
     else:
-        return PolygonPatch(transform(projection, shape))
+        return PolygonPatch(transform(projection, _shape))
+
 
 shapes_it = iter(tqdm(zip(tmp.keys(), unions), desc="Patches  "))
 patches = {}
