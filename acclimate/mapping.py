@@ -49,12 +49,14 @@ def make_map(
         patchespickle_file,
         map_regions=None,
         map_data=None,
+        show_cbar=True,
         centroids_regions=None,
         centroids_data=None,
         centroids_data_unit=None,
         centroids_annotate=None,
         centroids_alpha=.7,
         centroids_max_size=.05,
+        centroids_legend=True,
         cm=None,
         symmetric_cmap=False,
         outfile=None,
@@ -86,10 +88,6 @@ def make_map(
     if cm is None:
         cm = create_colormap("custom", ["red", "white", "blue"], xs=[0, 0.5, 1])
 
-    def my_transform(scale, t, trans, x, y):
-        p = trans(x, y)
-        return (p[0] * scale + t[0], p[1] * scale + t[1])
-
     projection = Transformer.from_crs("EPSG:4326", projection_name)
 
     minx = transform(projection.transform, Point(0, min_lon)).x
@@ -100,7 +98,7 @@ def make_map(
     fig, (ax, cax) = plt.subplots(
         ncols=2,
         gridspec_kw={'width_ratios': [.975, .025]},
-        figsize=(14, 13 / 2)
+        figsize=(7.07, 3.3)
     )
 
     ax.set_aspect(1)
@@ -144,15 +142,19 @@ def make_map(
             )
         )
         valid_collection.set_facecolors(cm(norm_color([validpatches_data[k] for k in validpatches.keys()])))
-        cbar = matplotlib.colorbar.ColorbarBase(
-            cax,
-            cmap=cm,
-            norm=norm_color,
-            orientation="vertical",
-            spacing="proportional",
-            extend=extend_c,
-        )
-        cbar.minorticks_on()
+        if show_cbar:
+            cbar = matplotlib.colorbar.ColorbarBase(
+                cax,
+                cmap=cm,
+                norm=norm_color,
+                orientation="vertical",
+                spacing="proportional",
+                extend=extend_c,
+            )
+            cbar.minorticks_on()
+            cax.set_ylabel(y_label)
+        else:
+            cax.axis('off')
 
     for r, (level, subregions, patch) in patches.items():
         if len(subregions) == 1 and r not in validpatches and r not in invpatches:
@@ -189,14 +191,6 @@ def make_map(
         legend_wedges = []
         x_pos = ax.get_xlim()[0] + get_radius(centroids_vmin)
         y_pos = ax.get_ylim()[0] + get_radius(centroids_vmax)
-        for d in np.linspace(centroids_vmin, centroids_vmax, 3):
-            radius = get_radius(d)
-            x_pos += 2 * radius
-            legend_wedges.append(Wedge((x_pos, y_pos), radius, 0, 360))
-            text = f"{int(np.round(d, 0))}"
-            if centroids_data_unit is not None:
-                text += "{}".format(centroids_data_unit)
-            ax.text(x_pos, y_pos, text, ha='center', va='center')
         ax.add_collection(
             PatchCollection(
                 wedges,
@@ -208,16 +202,26 @@ def make_map(
                 alpha=centroids_alpha
             )
         )
-        ax.add_collection(
-            PatchCollection(
-                legend_wedges,
-                facecolors='lightgrey',
-                edgecolors='grey',
-                linewidths=.1,
-                rasterized=rasterize,
-                zorder=1,
+        if centroids_legend:
+            for d in np.linspace(centroids_vmin, centroids_vmax, 3):
+                radius = get_radius(d)
+                # x_pos += 2 * radius
+                x_pos += .05 * (abs(ax.get_xlim()[0]) + abs(ax.get_xlim()[1]))
+                legend_wedges.append(Wedge((x_pos, y_pos), radius, 0, 360))
+                text = f"{int(np.round(d, 0))}"
+                if centroids_data_unit is not None:
+                    text += "{}".format(centroids_data_unit)
+                ax.text(x_pos + radius * 1.1, y_pos, text, ha='center', va='center')
+            ax.add_collection(
+                PatchCollection(
+                    legend_wedges,
+                    facecolors='lightgrey',
+                    edgecolors='grey',
+                    linewidths=.1,
+                    rasterized=rasterize,
+                    zorder=1,
+                )
             )
-        )
 
     plt.tight_layout()
 
