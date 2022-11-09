@@ -73,6 +73,7 @@ def make_map(
         inv_ec='black',
         map_v_limits=None,
         centroids_v_limits=None,
+        figsize=None
 ):
     if map_data is None and centroids_data is None:
         raise ValueError("Must pass at least one of map_data and centroids_data to plot.")
@@ -98,7 +99,7 @@ def make_map(
     fig, (ax, cax) = plt.subplots(
         ncols=2,
         gridspec_kw={'width_ratios': [.975, .025]},
-        figsize=(7.07, 3.3)
+        figsize=(7.07, 3.3) if figsize is None else figsize
     )
 
     ax.set_aspect(1)
@@ -142,19 +143,18 @@ def make_map(
             )
         )
         valid_collection.set_facecolors(cm(norm_color([validpatches_data[k] for k in validpatches.keys()])))
-        if show_cbar:
-            cbar = matplotlib.colorbar.ColorbarBase(
-                cax,
-                cmap=cm,
-                norm=norm_color,
-                orientation="vertical",
-                spacing="proportional",
-                extend=extend_c,
-            )
-            cbar.minorticks_on()
-            cax.set_ylabel(y_label)
-        else:
-            cax.axis('off')
+        cbar = matplotlib.colorbar.ColorbarBase(
+            cax,
+            cmap=cm,
+            norm=norm_color,
+            orientation="vertical",
+            spacing="proportional",
+            extend=extend_c,
+        )
+        cbar.minorticks_on()
+        cax.set_ylabel(y_label)
+
+
 
     for r, (level, subregions, patch) in patches.items():
         if len(subregions) == 1 and r not in validpatches and r not in invpatches:
@@ -224,6 +224,9 @@ def make_map(
             )
 
     plt.tight_layout()
+
+    if not show_cbar:
+        cax.set_visible(False)
 
     if numbering is not None:
         ax.text(
