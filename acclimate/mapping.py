@@ -13,6 +13,7 @@ from matplotlib.patches import PathPatch, Wedge
 from pyproj import Transformer
 from shapely.ops import transform
 from shapely.geometry import Point
+from shapely import affinity
 
 
 def create_colormap(name, colors, alphas=None, xs=None):
@@ -73,7 +74,10 @@ def make_map(
         inv_ec='black',
         map_v_limits=None,
         centroids_v_limits=None,
-        figsize=None
+        figsize=None,
+        ax=None,
+        cax=None,
+        cbar_orientation='vertical',
 ):
     if map_data is None and centroids_data is None:
         raise ValueError("Must pass at least one of map_data and centroids_data to plot.")
@@ -96,11 +100,12 @@ def make_map(
     miny = transform(projection.transform, Point(min_lat, 0)).y
     maxy = transform(projection.transform, Point(max_lat, 0)).y
 
-    fig, (ax, cax) = plt.subplots(
-        ncols=2,
-        gridspec_kw={'width_ratios': [.975, .025]},
-        figsize=(7.07, 3.3) if figsize is None else figsize
-    )
+    if ax == cax == None:
+        fig, (ax, cax) = plt.subplots(
+            ncols=2,
+            gridspec_kw={'width_ratios': [.975, .025]},
+            figsize=(7.07, 3.3) if figsize is None else figsize
+        )
 
     ax.set_aspect(1)
     ax.axis("off")
@@ -147,7 +152,7 @@ def make_map(
             cax,
             cmap=cm,
             norm=norm_color,
-            orientation="vertical",
+            orientation=cbar_orientation,
             spacing="proportional",
             extend=extend_c,
         )
