@@ -229,8 +229,8 @@ def make_map(
         cax.set_visible(False)
 
     if numbering is not None:
-        transform = matplotlib.transforms.blended_transform_factory(fig.transFigure, axs.transAxes)
-        ax.text(0.0, 1.0, numbering, transform=ax.transAxes, fontweight='bold', ha='left', va='top')
+        tran = matplotlib.transforms.blended_transform_factory(fig.transFigure, ax.transAxes)
+        ax.text(0.0, 1.0, numbering, transform=tran, fontweight='bold', ha='left', va='top')
 
     if outfile is not None:
         fig.savefig(outfile, dpi=300)
