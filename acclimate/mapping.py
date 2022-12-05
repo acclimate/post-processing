@@ -81,6 +81,7 @@ def make_map(
         cax=None,
         cbar_orientation='vertical',
         exclude_regions=None,
+        silently_exclude_regions=None,
 ):
     if map_data is None and centroids_data is None:
         raise ValueError("Must pass at least one of map_data and centroids_data to plot.")
@@ -90,6 +91,9 @@ def make_map(
 
     if exclude_regions is None:
         exclude_regions = []
+
+    if silently_exclude_regions is None:
+        silently_exclude_regions = []
 
     patchespickle = pickle.load(gzip.GzipFile(patchespickle_file, "rb"))
     patches = patchespickle["patches"]
@@ -170,7 +174,7 @@ def make_map(
 
     for r, (level, subregions, patch) in patches.items():
         if len(subregions) == 1 and r not in validpatches and r not in invpatches:
-            if r in acclimate_regions:
+            if r in acclimate_regions and r not in silently_exclude_regions:
                 invpatches[r] = patch
                 print('No data passed for region {}'.format(r))
             else:
