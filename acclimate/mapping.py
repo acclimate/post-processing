@@ -15,6 +15,8 @@ from shapely.ops import transform
 from shapely.geometry import Point
 from shapely import affinity
 
+from acclimate.variable import acclimate_regions
+
 
 def create_colormap(name, colors, alphas=None, xs=None):
     def get_rgb1(c, alpha=1):
@@ -78,6 +80,7 @@ def make_map(
         ax=None,
         cax=None,
         cbar_orientation='vertical',
+        exclude_regions=None,
 ):
     if map_data is None and centroids_data is None:
         raise ValueError("Must pass at least one of map_data and centroids_data to plot.")
@@ -85,9 +88,11 @@ def make_map(
     if centroids_annotate is None:
         centroids_annotate = []
 
+    if exclude_regions is None:
+        exclude_regions = []
+
     patchespickle = pickle.load(gzip.GzipFile(patchespickle_file, "rb"))
     patches = patchespickle["patches"]
-    centroids = patchespickle["centroids"]
     projection_name = patchespickle["projection"]
 
     if cm is None:
@@ -116,6 +121,7 @@ def make_map(
     validpatches = {}
     validpatches_data = {}
     invpatches = {}
+    silentpatches = {}
     if map_data is not None:
         if map_v_limits is None:
             map_vmin = np.min(map_data)
@@ -131,7 +137,10 @@ def make_map(
                 level, subregions, patch = patches[r]
                 if math.isnan(d):
                     invpatches[r] = patch
-                    print('NAN data for region {}'.format(r))
+                    print(f'NAN data for region {r}')
+                elif r in exclude_regions:
+                    invpatches[r] = patch
+                    print(f'excluding region {r}')
                 else:
                     validpatches[r] = patch
                     validpatches_data[r] = d
@@ -159,12 +168,13 @@ def make_map(
         cbar.minorticks_on()
         cax.set_ylabel(y_label)
 
-
-
     for r, (level, subregions, patch) in patches.items():
         if len(subregions) == 1 and r not in validpatches and r not in invpatches:
-            invpatches[r] = patch
-            # print('No data passed for region {}'.format(r))
+            if r in acclimate_regions:
+                invpatches[r] = patch
+                print('No data passed for region {}'.format(r))
+            else:
+                silentpatches[r] = patch
 
     ax.add_collection(
         PatchCollection(
@@ -178,7 +188,19 @@ def make_map(
         )
     )
 
+    ax.add_collection(
+        PatchCollection(
+            list(silentpatches.values()),
+            facecolors='none',
+            edgecolors=valid_ec,
+            linewidths=.1,
+            rasterized=rasterize,
+            zorder=0
+        )
+    )
+
     if centroids_data is not None:
+        centroids = patchespickle["centroids"]
         if centroids_v_limits is None:
             centroids_vmin = np.min(centroids_data)
             centroids_vmax = np.max(centroids_data)
