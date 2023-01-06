@@ -177,6 +177,9 @@ def make_map(
             if r in acclimate_regions and r not in silently_exclude_regions:
                 invpatches[r] = patch
                 print('No data passed for region {}'.format(r))
+            elif r in exclude_regions and r not in silently_exclude_regions:
+                invpatches[r] = patch
+                print(f'excluding region {r}')
             else:
                 silentpatches[r] = patch
 
