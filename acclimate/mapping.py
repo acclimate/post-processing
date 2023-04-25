@@ -74,6 +74,7 @@ def make_map(
         valid_ec='black',
         inv_fc='lightgrey',
         inv_ec='black',
+        inv_hatch=False,
         map_v_limits=None,
         centroids_v_limits=None,
         figsize=None,
@@ -186,7 +187,7 @@ def make_map(
     ax.add_collection(
         PatchCollection(
             list(invpatches.values()),
-            hatch="///",
+            hatch="///" if inv_hatch else None,
             facecolors=inv_fc,
             edgecolors=inv_ec,
             linewidths=.1,
