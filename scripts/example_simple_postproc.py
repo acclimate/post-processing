@@ -53,7 +53,7 @@ for output in outputfiles:
     except:
         print(output)
 
-client.compute(precompute)
+dask.compute(precompute)
 
 # this generates netcdf files for handling with xarray, e.g. aggregate by sector / region and compare between runs
 
