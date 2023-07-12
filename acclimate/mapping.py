@@ -162,26 +162,28 @@ def make_map(
             )
         )
         valid_collection.set_facecolors(cm(norm_color([validpatches_data[k] for k in validpatches.keys()])))
-        cbar = matplotlib.colorbar.ColorbarBase(
-            cax,
-            cmap=cm,
-            norm=norm_color,
-            orientation=cbar_orientation,
-            spacing="proportional",
-            extend=extend_c,
-        )
-        cbar.minorticks_on()
-        cax.set_ylabel(y_label)
+        if cax is not None:
+            cbar = matplotlib.colorbar.ColorbarBase(
+                cax,
+                cmap=cm,
+                norm=norm_color,
+                orientation=cbar_orientation,
+                spacing="proportional",
+                extend=extend_c,
+            )
+            cbar.minorticks_on()
+            cax.set_ylabel(y_label)
 
     for r, (level, subregions, patch) in patches.items():
-        if len(subregions) == 1 and r not in validpatches and r not in invpatches:
+        # if len(subregions) == 1 and r not in validpatches and r not in invpatches:
+        if r not in validpatches and r not in invpatches:
             if r in acclimate_regions and r not in silently_exclude_regions:
                 invpatches[r] = patch
                 print('No data passed for region {}'.format(r))
             elif r in exclude_regions and r not in silently_exclude_regions:
                 invpatches[r] = patch
                 print(f'excluding region {r}')
-            else:
+            elif level == 0:
                 silentpatches[r] = patch
 
     ax.add_collection(
@@ -260,7 +262,7 @@ def make_map(
 
     plt.tight_layout()
 
-    if not show_cbar:
+    if not show_cbar and cax is not None:
         cax.set_visible(False)
 
     if numbering is not None:
