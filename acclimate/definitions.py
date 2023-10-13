@@ -812,13 +812,21 @@ regions_index_name_dict = dict(zip(region_indexes, region_names))
 regions_name_index_dict = dict(zip(region_names, region_indexes))
 
 
-# WORLD BANK region definitions & income groups based on 2021 data, generated with script "translate_world_bank_category_data"
+# WORLD BANK region definitions & income groups based on 2021 data, generated with script "translate_world_bank_category_data.py"
 
 #N.B. Venezuela (VEN) not categorized
 world_bank_income_groups = {'High income': ['ABW', 'AND', 'ARE', 'ATG', 'AUS', 'AUT', 'BEL', 'BHR', 'BHS', 'BMU', 'BRB', 'BRN', 'CAN', 'CHE', 'CHI', 'CHL', 'CUW', 'CYM', 'CYP', 'CZE', 'DEU', 'DNK', 'ESP', 'EST', 'FIN', 'FRA', 'FRO', 'GBR', 'GIB', 'GRC', 'GRL', 'GUM', 'HKG', 'HRV', 'HUN', 'IMN', 'IRL', 'ISL', 'ISR', 'ITA', 'JPN', 'KNA', 'KOR', 'KWT', 'LIE', 'LTU', 'LUX', 'LVA', 'MAC', 'MAF', 'MCO', 'MLT', 'MNP', 'NCL', 'NLD', 'NOR', 'NRU', 'NZL', 'OMN', 'PAN', 'POL', 'PRI', 'PRT', 'PYF', 'QAT', 'ROU', 'SAU', 'SGP', 'SMR', 'SVK', 'SVN', 'SWE', 'SXM', 'SYC', 'TCA', 'TTO', 'TWN', 'URY', 'USA', 'VGB', 'VIR']
     , 'Low income': ['AFG', 'BDI', 'BFA', 'CAF', 'COD', 'ERI', 'ETH', 'GIN', 'GMB', 'GNB', 'LBR', 'MDG', 'MLI', 'MOZ', 'MWI', 'NER', 'PRK', 'RWA', 'SDN', 'SLE', 'SOM', 'SSD', 'SYR', 'TCD', 'TGO', 'UGA', 'YEM', 'ZMB'],
  'Lower middle income': ['AGO', 'BEN', 'BGD', 'BOL', 'BTN', 'CIV', 'CMR', 'COG', 'COM', 'CPV', 'DJI', 'DZA', 'EGY', 'FSM', 'GHA', 'HND', 'HTI', 'IDN', 'IND', 'IRN', 'KEN', 'KGZ', 'KHM', 'KIR', 'LAO', 'LBN', 'LKA', 'LSO', 'MAR', 'MMR', 'MNG', 'MRT', 'NGA', 'NIC', 'NPL', 'PAK', 'PHL', 'PNG', 'PSE', 'SEN', 'SLB', 'SLV', 'STP', 'SWZ', 'TJK', 'TLS', 'TUN', 'TZA', 'UKR', 'UZB', 'VNM', 'VUT', 'WSM', 'ZWE']
     , 'Upper middle income': ['ALB', 'ARG', 'ARM', 'ASM', 'AZE', 'BGR', 'BIH', 'BLR', 'BLZ', 'BRA', 'BWA', 'CHN', 'COL', 'CRI', 'CUB', 'DMA', 'DOM', 'ECU', 'FJI', 'GAB', 'GEO', 'GNQ', 'GRD', 'GTM', 'GUY', 'IRQ', 'JAM', 'JOR', 'KAZ', 'LBY', 'LCA', 'MDA', 'MDV', 'MEX', 'MHL', 'MKD', 'MNE', 'MUS', 'MYS', 'NAM', 'PER', 'PLW', 'PRY', 'RUS', 'SRB', 'SUR', 'THA', 'TKM', 'TON', 'TUR', 'TUV', 'VCT', 'XKX', 'ZAF']}
+
+
+world_bank_income_groups_chn_usa = {'High income': ['ABW', 'AND', 'ARE', 'ATG', 'AUS', 'AUT', 'BEL', 'BHR', 'BHS', 'BMU', 'BRB', 'BRN', 'CAN', 'CHE', 'CHI', 'CHL', 'CUW', 'CYM', 'CYP', 'CZE', 'DEU', 'DNK', 'ESP', 'EST', 'FIN', 'FRA', 'FRO', 'GBR', 'GIB', 'GRC', 'GRL', 'GUM', 'HKG', 'HRV', 'HUN', 'IMN', 'IRL', 'ISL', 'ISR', 'ITA', 'JPN', 'KNA', 'KOR', 'KWT', 'LIE', 'LTU', 'LUX', 'LVA', 'MAC', 'MAF', 'MCO', 'MLT', 'MNP', 'NCL', 'NLD', 'NOR', 'NRU', 'NZL', 'OMN', 'PAN', 'POL', 'PRI', 'PRT', 'PYF', 'QAT', 'ROU', 'SAU', 'SGP', 'SMR', 'SVK', 'SVN', 'SWE', 'SXM', 'SYC', 'TCA', 'TTO', 'TWN', 'URY', 'USA', 'VGB', 'VIR']+WORLD_REGIONS["USA"]
+    , 'Low income': ['AFG', 'BDI', 'BFA', 'CAF', 'COD', 'ERI', 'ETH', 'GIN', 'GMB', 'GNB', 'LBR', 'MDG', 'MLI', 'MOZ', 'MWI', 'NER', 'PRK', 'RWA', 'SDN', 'SLE', 'SOM', 'SSD', 'SYR', 'TCD', 'TGO', 'UGA', 'YEM', 'ZMB'],
+ 'Lower middle income': ['AGO', 'BEN', 'BGD', 'BOL', 'BTN', 'CIV', 'CMR', 'COG', 'COM', 'CPV', 'DJI', 'DZA', 'EGY', 'FSM', 'GHA', 'HND', 'HTI', 'IDN', 'IND', 'IRN', 'KEN', 'KGZ', 'KHM', 'KIR', 'LAO', 'LBN', 'LKA', 'LSO', 'MAR', 'MMR', 'MNG', 'MRT', 'NGA', 'NIC', 'NPL', 'PAK', 'PHL', 'PNG', 'PSE', 'SEN', 'SLB', 'SLV', 'STP', 'SWZ', 'TJK', 'TLS', 'TUN', 'TZA', 'UKR', 'UZB', 'VNM', 'VUT', 'WSM', 'ZWE']
+    , 'Upper middle income': ['ALB', 'ARG', 'ARM', 'ASM', 'AZE', 'BGR', 'BIH', 'BLR', 'BLZ', 'BRA', 'BWA', 'CHN', 'COL', 'CRI', 'CUB', 'DMA', 'DOM', 'ECU', 'FJI', 'GAB', 'GEO', 'GNQ', 'GRD', 'GTM', 'GUY', 'IRQ', 'JAM', 'JOR', 'KAZ', 'LBY', 'LCA', 'MDA', 'MDV', 'MEX', 'MHL', 'MKD', 'MNE', 'MUS', 'MYS', 'NAM', 'PER', 'PLW', 'PRY', 'RUS', 'SRB', 'SUR', 'THA', 'TKM', 'TON', 'TUR', 'TUV', 'VCT', 'XKX', 'ZAF']+WORLD_REGIONS["CHN"]}
+
+
 world_bank_region_groups = {'Latin America & Caribbean': ['ABW', 'ARG', 'ATG', 'BHS', 'BLZ', 'BOL', 'BRA', 'BRB', 'CHL', 'COL', 'CRI', 'CUB', 'CUW', 'CYM', 'DMA', 'DOM', 'ECU', 'GRD', 'GTM', 'GUY', 'HND', 'HTI', 'JAM', 'KNA', 'LCA', 'MAF', 'MEX', 'NIC', 'PAN', 'PER', 'PRI', 'PRY', 'SLV', 'SUR', 'SXM', 'TCA', 'TTO', 'URY', 'VCT', 'VEN', 'VGB', 'VIR']
     , 'South Asia': ['AFG', 'BGD', 'BTN', 'IND', 'LKA', 'MDV', 'NPL', 'PAK']
     , 'Sub-Saharan Africa': ['AGO', 'BDI', 'BEN', 'BFA', 'BWA', 'CAF', 'CIV', 'CMR', 'COD', 'COG', 'COM', 'CPV', 'ERI', 'ETH', 'GAB', 'GHA', 'GIN', 'GMB', 'GNB', 'GNQ', 'KEN', 'LBR', 'LSO', 'MDG', 'MLI', 'MOZ', 'MRT', 'MUS', 'MWI', 'NAM', 'NER', 'NGA', 'RWA', 'SDN', 'SEN', 'SLE', 'SOM', 'SSD', 'STP', 'SWZ', 'SYC', 'TCD', 'TGO', 'TZA', 'UGA', 'ZAF', 'ZMB', 'ZWE']
@@ -865,6 +873,13 @@ sector_names = ['AGRI',
                 'OTHE',
                 'REXI']
 sector_indizes = range(0, 26)
+
+#DOSE sectors groups
+
+dose_sector_groups = {"Agriculture":["AGRI","FISH"]
+    ,"Manufacture":["FOOD","ELWA","OILC","WOOD","TEXT","METL","MACH","TREQ","MANU","CONS","MINQ","RECY"]
+    ,"Services":["EDHE","TRAN","COMM","RETT","WHOT","GAST","REXI","OTHERS","FINC","HOUS","ADMI","REPA"]}
+
 
 consumer_index_name_dict = dict(zip(consumer_indizes, consumer_names))
 consumer_name_index_dict = dict(zip(consumer_names, consumer_indizes))

@@ -62,6 +62,7 @@ def make_map(
         centroids_legend=True,
         cm=None,
         symmetric_cmap=False,
+        center_zero=False,
         outfile=None,
         extend_c='both',
         numbering=None,
@@ -136,6 +137,10 @@ def make_map(
         if symmetric_cmap and np.sign(map_vmin) != np.sign(map_vmax):
             v = max(abs(map_vmin), abs(map_vmax))
             (map_vmin, map_vmax) = (np.sign(map_vmin) * v, np.sign(map_vmax) * v)
+        if center_zero:
+            v = max(abs(map_vmin), abs(map_vmax))
+            (map_vmin, map_vmax) = (-v,v)
+
         norm_color = Normalize(vmin=map_vmin, vmax=map_vmax)
         for r, d in zip(map_regions, map_data):
             if r in patches:

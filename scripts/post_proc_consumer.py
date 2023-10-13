@@ -196,15 +196,7 @@ consumer_files = regionalize_data(args.regions, consumer_data, output,
 tasks = [safe_file_dict(consumer_files, args.outputdir)]
 compute_tasklist(tasks)
 
-# print("Firms...")
-#
-# # # calculate firm data
-# firm_data = output.xarrays["firms"]
-# firm_files = regionalize_data(args.regions, firm_data, output,
-#                               sectors=None, filenamestub="baseline_relative_firm_data_", aggregate_regions=False)
-# tasks = [safe_file_dict(firm_files, args.outputdir)]
-# compute_tasklist(tasks)
-#
+
 print("Done.")
 cluster.close()
 client.close()
