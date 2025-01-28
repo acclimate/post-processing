@@ -1,4 +1,6 @@
-# TODO plotting functions, i.a. for maps, interactve widgets for notebooks
+# TODO less specific, maybe more generic plots. 
+# TODO: most used "normal" acclimate plots, i.e. timeseries, boxplots, etc. 
+
 import math
 
 import holoviews as hv

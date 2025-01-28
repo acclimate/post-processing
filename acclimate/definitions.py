@@ -1,4 +1,6 @@
 # TODO important definitions such as standard region sets
+# TODO: unify, maybe base on *.yml lists of individual regions for easier sharing and use outside of this codebase
+
 import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
 

@@ -244,4 +244,4 @@ dependencies:
   - zipp=3.7.0
   - zlib=1.2.11
   - zstd=1.4.9
-prefix: /home/robin/anaconda3/envs/post-processing
+#prefix: /home/USER/anaconda3/envs/post-processing #TODO: adjust to your path

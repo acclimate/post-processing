@@ -1,6 +1,10 @@
 #!/usr/bin/python3 -W ignore
 # -*- coding: utf-8 -*-
 
+# create a patchespickle file for mapping.py script, pre-calculating polygons for region mapping,
+# at the moment based on EORA regions and world regions as defined in this file. 
+# TODO: change to world regions from definitions for reduced code duplicates
+
 import argparse
 import gzip
 import pickle

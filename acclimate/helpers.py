@@ -1,4 +1,5 @@
 # TODO helper functions for dealing with acclimate output datasets
+# TODO: adjust to new overarching structure based on xarray?!
 import os
 
 import holoviews as hv

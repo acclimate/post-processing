@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+#TODO: simplify after code overhaul
+
+
 import argparse
 import os
 

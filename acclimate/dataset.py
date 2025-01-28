@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
-import copy
 
+# baseclass to handle acclimate output and wrap it into xarray objects
+#TODO: consider replacing with xarray.datatree
+
+
+import copy
 import pandas as pd
 import xarray as xr
 from netCDF4 import Dataset

@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+#TODO: update after code improvements
+
 import glob
 import os
 import dask
 
 from acclimate import dataset
 
-basedir = #TODO: path to acclimate outputs
-globterm = #TODO: search term to identify outputs (if all nc files, just use "/**/*.nc"
+basedir = "/p/projects/acclimate/project-example" #TODO: path to acclimate outputs
+globterm = "test_output" #TODO: search term to identify outputs (if all nc files, just use "/**/*.nc"
 outputfiles = glob.glob(basedir + globterm, recursive=True)
 
 variables = #TODO: acclimate variables to load
@@ -56,4 +58,3 @@ for output in outputfiles:
 dask.compute(precompute)
 
 # this generates netcdf files for handling with xarray, e.g. aggregate by sector / region and compare between runs
-
