@@ -1,10 +1,10 @@
 
 """
-This script processes climate model data files by categorizing them based on model, scenario (ssp), and time period, 
+This script processes ensemble model output data files by categorizing them based on model, scenario (ssp), and time period, 
 and then loads the data into a hierarchical data structure using xarray's DataTree.
 The script performs the following steps:
 1. Determines the base directory based on the environment (local or cluster).
-2. Defines glob patterns to search for specific climate model data files.
+2. Defines glob patterns to search for specific model output files.
 3. Searches for files matching the defined patterns.
 4. Categorizes the found files into a dictionary based on model, scenario, and time period.
 5. Loads the data from each file into a DataTree structure, selecting specific groups of interest.
@@ -13,11 +13,11 @@ The script performs the following steps:
 Key variables:
 - basedir: Base directory for local environment.
 - clusterbasedir: Base directory for cluster environment.
-- modellist: List of climate models to search for.
+- modellist: List of (climate) models to search for.
 - ssp_globterm: Glob pattern for SSP scenarios.
 - time_globterm: Glob pattern for time periods.
 - group_selection: List of groups to select from the data files.
-The final output is a DataTree structure containing the categorized and loaded climate model data.
+The final output are ensemble datasets for each selected group, containing data from all models, scenarios, and time periods.
 """
 
 import glob
