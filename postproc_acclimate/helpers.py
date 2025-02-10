@@ -1,117 +1,63 @@
 # TODO helper functions for dealing with acclimate output datasets
 # TODO: adjust to new overarching structure based on xarray?!
-import os
+from postproc_acclimate import definitions
 
-import holoviews as hv
-import xarray as xr
-
-from acclimate import definitions, analysis
-
-
-def select_partial_data(data, sector=None, region=None, agent=None):
+def data_agent_converter(data):
     """
-      Get part of dataset selected by the parameters.
+    Convert agent data to a more readable format.
 
-      Parameters
-      ----------
-      data
-          xarray dataset to select on
-      sector
-          None or int or str or iterable of int : Sector(s) of data to select
-      region
-          None or int or iterable of int : Region(s) of data to select
-      agent
-          None or int or iterable of int : Indizes of agents for which data to select
+    Parameters
+    ----------
+    data : xarray.Dataset
+        The dataset containing agent data.
 
-      Returns
-      -------
-      xarray.Dataset
-          dataset with the selected subset of input data
-      """
-    if sector is not None:
-        data = data.sel(sector=sector)
-    if region is not None:
-        data = data.sel(region=region)
-    if agent is not None:
-        data = data.sel(agent=agent)
-    return data
-
-
-def select_by_agent_properties(data, acclimate_output, sector=None, region=None, type=None):
+    Returns
+    -------
+    list
+        Converted agent names.
     """
-      Get part of dataset selected by the agents fitting the parameters.
-      Parameters
-      ----------
-      data
-          xarray dataset to select on
-      acclimate_output
-        AcclimateOutput for agent properties
-      sector
-          None or int or str or iterable of int : Sector(s) of agents to select
-      region
-          None or int or iterable of int : Region(s) of agents to select
-      type
-          None or int or iterable of int : Type of agents to select
+    def agent_name_converter(agents):
+        """
+        Convert agent names from quadruple to a string format.
 
-      Returns
-      -------
-      xarray.Dataset
-          dataset with the selected subset of data for the agents with given properties
-      """
-    agents = acclimate_output.agent(type=type, region=region, sector=sector)
-    return data.sel(agent=agents)
+        Parameters
+        ----------
+        agents : list
+            List of agent quadruples.
 
+        Returns
+        -------
+        list
+            List of converted agent names.
+        """
+        agent_names = []
+        for agent in agents:
+            agent_name = agent[0].tobytes().decode("utf-8").rstrip('\x00')
+            if agent_name:
+                agent_names.append(agent_name)
 
-def aggregate_by_sector_group(data, sector_groups):
-    """
-    Aggregates data by given sector groups
-      Parameters
-      ----------
-      data
-        xarray data to be aggregated on the sector dimension
-      sector_groups
-        dictionary with sector group names as keys and sector names as values
+        quintiles = definitions.long_quintiles
+        new_quintiles = definitions.short_quintiles
 
-      Returns
-      -------
-      xarray.Dataset
-        aggregated data with sector dimension reduced to the given sector groups
-    """
-    aggregated_data = []
-    for i_group in sector_groups.keys():
-        sector_indizes = [definitions.producing_sectors_name_index_dict[i_sector] for i_sector in
-                          sector_groups[i_group]]
-        aggregate = data.sel(sector=sector_indizes).sum("sector", skipna=True)
-        aggregated_data.append(aggregate)
-    return xr.concat(aggregated_data, "sector")
+        new_consumer_names = []
+        old_consumer_names = []
+        region = agent_names[0].split(":")[1]
+        for agent_name in agent_names:
+            if 'income_quintile' not in agent_name:
+                region = agent_name.split(":")[1]
+            for quintile, new_quintile in zip(quintiles, new_quintiles):
+                if quintile in agent_name:
+                    old_consumer_names.append(agent_name)
+                    new_agent_name = new_quintile + ":" + region
+                    new_consumer_names.append(new_agent_name)
 
+        new_agent_names = agent_names.copy()
+        for old, new in zip(old_consumer_names, new_consumer_names):
+            new_agent_names = [new if agent is old else agent for agent in new_agent_names]
+        return new_agent_names
 
-# some helpers on data exploration
-
-def clean_vdims_consumption(data, agent_map=definitions.consumer_map, agent_label="income_qunitile",
-                            sector_map=definitions.producing_sector_map):
-    for dimension in data.kdims:
-        if dimension.name == "agent":
-            dimension.value_format = agent_map
-            dimension.label = agent_label
-        if dimension.name == "sector":
-            dimension.value_format = sector_map
-            dimension.values = list(range(0, 26))
-        if dimension.name == "time":
-            dimension.label = "Time"
-    return data
-
-
-def load_region_data(datadir, filename, region, sector_map=definitions.producing_sector_map, elasticities=True,
-                     agent_map=definitions.consumer_map, agent_label="income_quintile"):
-    data = xr.open_dataset(os.path.join(datadir, filename + region + ".nc"))
-    dataset = hv.Dataset(data)
-    if elasticities:
-        dataset = analysis.calculate_empiricial_elasticities(dataset)
-        dataset = analysis.savgol_elasticity(dataset)
-
-    return clean_vdims_consumption(dataset, sector_map=sector_map, agent_map=agent_map, agent_label=agent_label)
-
-
-def load_region_basket_data(datadir, filename, region, elasticities=True):
-    return load_region_data(datadir, filename, region, sector_map=definitions.basket_map, elasticities=elasticities)
+    if "agent" in data.dims:
+        return agent_name_converter(data["agent"].values)
+    else:
+        print("warning: no agents found")
+        return None
