@@ -66,3 +66,4 @@ def add_region_sector(data):
         data_transformed = data.groupby("sector").map(lambda x: x.groupby("region").sum())
         data_transformed = data_transformed.chunk('auto')
     return data_transformed
+
