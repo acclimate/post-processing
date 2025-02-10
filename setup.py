@@ -9,7 +9,7 @@ from setuptools import find_packages, setup
 
 import versioneer
 
-NAME = "post-proc-acclimate"
+NAME = "postproc_acclimate"
 SHORT_DESCRIPTION = (
     "Python library and scripts for post-processing output of the Acclimate model"
 )

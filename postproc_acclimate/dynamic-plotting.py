@@ -1,5 +1,5 @@
-# TODO less specific, maybe more generic plots. 
-# TODO: most used "normal" acclimate plots, i.e. timeseries, boxplots, etc. 
+# TODO update if further interest in dynamic plots, 
+# so long just informative for adjusting to your needs
 
 import math
 
