@@ -1,6 +1,7 @@
 # TODO helper functions for dealing with acclimate output datasets
 # TODO: adjust to new overarching structure based on xarray?!
 from postproc_acclimate import definitions
+import warnings
 
 def data_agent_converter(data):
     """
@@ -59,5 +60,5 @@ def data_agent_converter(data):
     if "agent" in data.dims:
         return agent_name_converter(data["agent"].values)
     else:
-        print("warning: no agents found")
+        warnings.warn("No agents found in the dataset", UserWarning)
         return None

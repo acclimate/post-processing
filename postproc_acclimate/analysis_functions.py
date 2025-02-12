@@ -1,5 +1,17 @@
-''' Methods for calculation of summary metrics on xarray ensemble data.'''
+""""Methods for calculation of summary metrics on xarray ensemble data.
 
+This script provides functions to aggregate xarray data by specified dimensions using dictionaries of keys. The main functions implemented are:
+1. `aggregate_by_dimension_dict`: Aggregates data by a given dimension using a dictionary of keys. This function selects data based on the provided dictionary, sums the data along the specified dimension, and assigns new coordinates based on the dictionary keys.
+2. `get_baseline_and_aggregates`: Aggregates data and provides aggregated baseline data. This function first retrieves baseline data for a specified date, then aggregates both the baseline data and the original data using the provided dictionary and dimension.
+
+
+For more advanced operations and native methods in xarray, refer to the following documentation:
+- [xarray apply_ufunc](https://xarray.pydata.org/en/stable/generated/xarray.apply_ufunc.html): Apply a function to xarray objects using numpy-like broadcasting and parallelized operations.
+- [xarray map_blocks](https://xarray.pydata.org/en/stable/generated/xarray.map_blocks.html): Apply a function to each block of a DataArray or Dataset, enabling parallel processing and handling of larger-than-memory datasets.
+
+
+
+"""
 import xarray as xr
 import postproc_acclimate.data_transform as datatransform
     
@@ -30,7 +42,7 @@ def aggregate_by_dimension_dict(data,dimension,dict,new_dimension_name=None):
         aggregated_data.append(data.sel({dimension:dict[key]}).sum(dim=dimension).assign_coords({new_dimension_name:key}))
     return xr.concat(aggregated_data,dim=new_dimension_name)
 
-def get_baseline_and_aggregates(data,baseline_date,dimension,dict,new_dimension_name=None):
+def get_baseline_and_aggregates(data,baseline_date,dimension,dict,new_dimension_name=None, baseline_dimension_name="time"):
     """
     Aggregate and provide aggregated baseline.
 
@@ -46,13 +58,17 @@ def get_baseline_and_aggregates(data,baseline_date,dimension,dict,new_dimension_
         Dictionary with key-value pairs of dimension values to aggregate.
     new_dimension_name : str, optional
         Name of the new dimension, default is dimension+"_aggregate".
+    baseline_dimension_name : str, optional
+        Name of the baseline dimension, default is "time".
 
     Returns
     -------
     tuple
         Tuple with baseline aggregates and aggregates for each key in dict.
     """
-    baseline_data = datatransform.get_baseline_data(data,baseline_date)
+    baseline_data = datatransform.get_baseline_data(data,baseline_date,dimension=baseline_dimension_name)
     baseline_aggregates = aggregate_by_dimension_dict(baseline_data,dimension,dict,new_dimension_name)
     aggregates = aggregate_by_dimension_dict(data,dimension,dict,new_dimension_name)
     return baseline_aggregates, aggregates
+
+

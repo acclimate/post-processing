@@ -865,7 +865,7 @@ world_bank_region_groups = {'Latin America & Caribbean': ['ABW', 'ARG', 'ATG', '
 def region_map(region_index):
     return regions_index_name_dict[region_index]
 
-long_quintiles = ["first income quintile", "second income quintile", "third income quintile", "fourth income quintile", "fifth income quintile"]
+long_quintiles = ["first_income_quintile", "second_income_quintile", "third_income_quintile", "fourth_income_quintile", "fifth_income_quintile"]
 short_quintiles = ["q1", "q2", "q3", "q4", "q5"]
 
 consumer_names = ["1st", "2nd", "3rd", "4th", "5th"]

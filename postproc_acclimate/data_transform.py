@@ -3,9 +3,9 @@
 import xarray as xr
 
 
-def get_baseline_data(data,baseline_date):
+def get_baseline_data(data, baseline_date, dimension="time"):
     """
-    Get baseline data for a given date.
+    Get baseline data for a given date along a specified dimension.
 
     Parameters
     ----------
@@ -13,14 +13,16 @@ def get_baseline_data(data,baseline_date):
         The input data from which to extract the baseline.
     baseline_date : str or pandas.Timestamp
         The date for which the baseline data is to be selected.
+    dimension : str, optional
+        The dimension along which to select the baseline data. Default is "time".
 
     Returns
     -------
     xarray.DataArray or xarray.Dataset
-        The baseline data corresponding to the given date.
+        The baseline data corresponding to the given date along the specified dimension.
         
     """
-    return data.sel(time=baseline_date)
+    return data.sel({dimension: baseline_date})
 
 def add_region_sector(data):
     """
