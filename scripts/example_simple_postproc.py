@@ -97,7 +97,7 @@ baseline_date = firm_ensemble_data.time.values[0]
 results["medians"] = data.quantile([0.5], dim="time")
 results["baseline_aggregates_regions"], results["aggregates_regions"] = analysis.get_baseline_and_aggregates(data, baseline_date, "region", aggregate_region_dict)
 
-to_save = [results[identifier].to_netcdf(os.path.join(basedir, f"{identifier}_firms_{calc_key}.nc"), compute=False) for calc_key in results.keys()]
+to_save = [results[calc_key].to_netcdf(os.path.join(basedir, f"{identifier}_firms_{calc_key}.nc"), compute=False) for calc_key in results.keys()]
 
 
 dask.compute(to_save)
