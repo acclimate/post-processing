@@ -59,6 +59,7 @@ REQUIREMENTS_EXTRAS = {
 setup(
     name=NAME,
     version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
     python_requires=">3",
     description=SHORT_DESCRIPTION,
     long_description=SHORT_DESCRIPTION,

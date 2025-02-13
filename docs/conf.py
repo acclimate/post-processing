@@ -12,14 +12,14 @@ import os
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-sys.path.append(os.path.join(os.path.dirname(__file__), "../acclimate"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../postproc_acclimate"))
 from _version import get_versions  # isort:skip # append path before
 
 
 # -- Project information -----------------------------------------------------
 
-project = "AcclimatePostProcessing"
-copyright = "2021 Acclimate Team"
+project = "postproc_acclimate"
+copyright = "2025"
 author = "Acclimate Team"
 version = get_versions()["version"]  # The short X.Y version
 release = version  # The full version, including alpha/beta/rc tags
@@ -33,6 +33,8 @@ extensions = [
     "sphinx.ext.coverage",
     "sphinx.ext.intersphinx",
     "sphinx.ext.napoleon",
+    'sphinx_rtd_theme',
+    "m2r2"
     #"sphinx_autodoc_typehints",  # must be after sphinx.ext.napoleon
 ]
 language = "en"
