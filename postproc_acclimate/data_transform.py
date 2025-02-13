@@ -28,21 +28,25 @@ def add_region_sector(data):
     """
     Adds 'sector' and 'region' coordinates to the input xarray DataArray based on the 'agent' dimension,
     and then groups the data by 'sector' and 'region', summing the values within each group.
+
     Parameters
     ----------
     data : xarray.DataArray
         The input data array which must have an 'agent' dimension. The 'agent' values should be strings
         formatted as 'sector:region'.
+
     Returns
     -------
     xarray.DataArray
         The transformed data array with 'sector' and 'region' coordinates added, and values summed
         within each 'sector' and 'region' group.
+
     Notes
     -----
     This function assumes that the 'agent' values in the input data array are strings formatted as
     'sector:region'. The function splits these strings to create new 'sector' and 'region' coordinates,
     and then groups and sums the data accordingly.
+
     Examples
     --------
     >>> import xarray as xr
@@ -66,6 +70,5 @@ def add_region_sector(data):
         
         data = data.assign_coords(sector=sector, region=region)
         data_transformed = data.groupby("sector").map(lambda x: x.groupby("region").sum())
-        data_transformed = data_transformed.chunk('auto')
-    return data_transformed
+    return data_transformed.chunk('auto')
 
