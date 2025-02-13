@@ -53,7 +53,7 @@ group_variables = {
 }
 
 with tqdm.tqdm(total=1, desc="Loading and processing files", leave=True, file=sys.stdout) as pbar:
-    ensemble_data_list = edc.load_and_process_files(ensembledir, pattern, "firms", group_variables["firms"])
+    ensemble_data_list = edc.load_ensemble_files(ensembledir, pattern, "firms", group_variables["firms"])
     pbar.update(1)
 
 # Check for each file in the list: if the time dimension is complete, add it to the list of files to merge,

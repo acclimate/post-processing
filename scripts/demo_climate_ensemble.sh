@@ -7,7 +7,7 @@
 #SBATCH --chdir=/p/projects/acclimate/projects/post-proc-dev
 #SBATCH --cpus-per-task=16
 #SBATCH --ntasks=1
-#SBATCH --time=0-23:59:00
+#SBATCH --time=0-01:59:00
 #SBATCH --export=ALL,OMP_PROC_BIND=FALSE
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
 source activate xarray-compacts
