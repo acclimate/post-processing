@@ -1,5 +1,7 @@
-# TODO helper functions for dealing with acclimate output datasets
-# TODO: adjust to new overarching structure based on xarray?!
+"""
+Helper functions for dealing with acclimate output datasets.
+"""
+
 from postproc_acclimate import definitions
 import warnings
 
@@ -36,7 +38,7 @@ def data_agent_converter(data):
             agent_name = agent[0].tobytes().decode("utf-8").rstrip('\x00')
             if agent_name:
                 agent_names.append(agent_name)
-
+                
         quintiles = definitions.long_quintiles
         new_quintiles = definitions.short_quintiles
 
@@ -62,3 +64,36 @@ def data_agent_converter(data):
     else:
         warnings.warn("No agents found in the dataset", UserWarning)
         return None
+
+def tidy_agents(dataset, group_to_load="firms"):
+    """
+    Tidy up agent names in the dataset and optionally filter by group.
+
+    Parameters
+    ----------
+    dataset : xarray.Dataset
+        The dataset containing agent data.
+    group_to_load : str, optional
+        The group of agents to load, by default "firms".
+
+    Returns
+    -------
+    xarray.Dataset
+        The dataset with tidied agent names.
+    """
+    if "agent" in dataset.dims:
+        new_agent_names = data_agent_converter(dataset['agent'])
+        dataset = dataset.assign_coords(agent=new_agent_names)
+        
+        regions = [agent.split(":")[1] for agent in new_agent_names]
+        unique_regions = []
+        for region in regions:
+            if region not in unique_regions:
+                unique_regions.append(region)
+        consumer_agents = [quintile+":"+region for quintile in definitions.short_quintiles for region in unique_regions]
+        other_agents = [agent for agent in new_agent_names if agent not in consumer_agents]
+        if group_to_load == "consumers":
+            dataset = dataset.sel(agent=consumer_agents)
+        else:
+            dataset = dataset.sel(agent=other_agents)
+    return dataset
