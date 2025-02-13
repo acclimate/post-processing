@@ -2,7 +2,11 @@
 Acclimate post-processing
 -------------------------
 
-Python library and scripts for post-processing output of the Acclimate model.
+Python library and scripts developed for post-processing output of the Acclimate model using xarray.
+
+Parts may also be helpful for processing of other netCDF based ensemble data, e.g. from climate models;
+especially the tools for a generic ensemble analysis workflow.
+
 """
 
 from setuptools import find_packages, setup
@@ -13,7 +17,11 @@ NAME = "postproc_acclimate"
 SHORT_DESCRIPTION = (
     "Python library and scripts for post-processing output of the Acclimate model"
 )
-AUTHORS = []
+AUTHORS = [
+    ("Lennart Quante", "https://github.com/lquante"),
+    ("Robin Middelanis", "https://github.com/rmiddelanis"),
+    ("Sven Willner", "https://github.com/swillner"),
+]
 URL = "https://github.com/acclimate/post-processing"
 PROJECT_URLS = {
     "Bug Reports": "https://github.com/acclimate/post-processing/issues",
