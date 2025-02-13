@@ -1,10 +1,127 @@
 ''' Methods for data combination of gridded ensemble data using xarray.'''
-
+import os
 import xarray as xr
 import glob
 
 from postproc_acclimate import definitions
 
+
+def load_and_process_files(ensembledir, pattern, group_to_load=None, group_variables=None, filetype="*.nc"):
+    """
+    Load and process NetCDF files from a directory based on a regex pattern.
+    This function loads NetCDF files from a specified directory that match a given regex pattern,
+    processes the files to extract parameters from their filenames, adding these as dimensions to the data
+    , and returns a list of xarray objects for combination.
+    
+    Parameters
+    ----------
+    ensembledir : str
+        The directory containing the ensemble files.
+    pattern : re.Pattern
+        A compiled regular expression pattern with named groups to match filenames.
+    group_to_load : str, optional
+        The group within the NetCDF files to load. If None, the entire file is loaded.
+    group_variables : list of str, optional
+        The variables within the group to load. If None, all variables are loaded.
+    filetype : str, optional
+        The file type pattern to match (default is "*.nc").
+    
+    Returns
+    -------
+    list of xarray.Dataset
+        A list of xarray objects to be merged with the appropriate xr.combine_by_coords, xr.merge, or xr.concat function.
+    
+    Raises
+    ------
+    AttributeError
+        If the pattern does not match the filenames or if the named groups are not present.
+    IndexError
+        If the files list is empty.
+    """
+    files = [f for f in glob.glob(os.path.join(ensembledir, filetype)) if pattern.match(os.path.basename(f))]
+    if not files:
+        raise IndexError("No files matched the given pattern.")
+    
+    testmatch = pattern.match(os.path.basename(files[0]))
+    ensemble_parameters = testmatch.groupdict().keys()
+    
+    parameter_type_dict = get_parameter_types(pattern, files)
+
+    data_to_merge = []
+    for f in files:
+        match = pattern.match(os.path.basename(f))
+        parameters = {param: match.group(param) for param in ensemble_parameters}
+
+        if group_to_load:
+            dataset = xr.open_datatree(f, chunks='auto')[group_to_load].to_dataset()
+            if group_variables:
+                dataset = dataset[group_variables]
+        else:
+            dataset = xr.open_dataset(f, chunks='auto')
+        
+        # Remove dimensions without variables occuring in DataTree
+        if group_to_load:
+            tmp_data = xr.open_datatree(f, chunks='auto')[group_to_load].to_dataset(inherit=False)
+            if group_variables:
+                remaining_dims = tmp_data[group_variables].dims
+            else:
+                remaining_dims = tmp_data.dims
+            for dim in dataset.dims:
+                if dim not in remaining_dims:
+                    dataset = dataset.drop_vars(dim)
+
+        for param in ensemble_parameters:
+            dataset[param] = parameters[param]
+            dataset[param] = dataset[param].astype(parameter_type_dict[param])
+            dataset[param].attrs['standard_name'] = param
+        dataset = dataset.set_coords(list(parameters.keys())).expand_dims(list(parameters.keys()))
+        data_to_merge.append(dataset)
+        
+    return data_to_merge
+
+
+def get_parameter_types(pattern, files):
+    """
+    Determine the types of parameters extracted from filenames using a regex pattern.
+
+    This function matches a regex pattern against the filenames and infers the types of the named groups
+    (parameters) in the pattern. It returns a dictionary mapping parameter names to their inferred types.
+
+    Parameters
+    ----------
+    pattern : re.Pattern
+        A compiled regular expression pattern with named groups to match filenames.
+    files : list of str
+        A list of filenames to match against the pattern.
+
+    Returns
+    -------
+    dict
+        A dictionary where keys are parameter names and values are their inferred types (int, float, or str).
+
+    Raises
+    ------
+    AttributeError
+        If the pattern does not match the filenames or if the named groups are not present.
+    """
+    samplematch = pattern.match(os.path.basename(files[0]))
+    ensemble_parameters = samplematch.groupdict().keys()
+    
+    def infer_type(value):
+        try:
+            return int(value)
+        except ValueError:
+            try:
+                return float(value)
+            except ValueError:
+                return str(value)
+    
+    parameter_types = {param: type(infer_type(samplematch.group(param))) for param in ensemble_parameters}
+    
+    return parameter_types
+
+
+#TODO: consider what to keep of this specialised pipeline for model - scenario - timeperiod data
 def find_ensemble_files(basedir, scenario_prefix="ssp", scenario_globpattern="[0-9][0-9][0-9]", time_globterm="[0-9][0-9][0-9][0-9]-[0-9][0-9][0-9][0-9]", modellist=None, recursive=True):
     
     """
@@ -45,6 +162,7 @@ def find_ensemble_files(basedir, scenario_prefix="ssp", scenario_globpattern="[0
         datadict[model][scenario][timeperiod].append(file)
     
     return datadict
+
 
 def process_datadict_to_datatree(datadict, group_selection, group_variables, data_agent_converter=None):
     """
@@ -144,7 +262,7 @@ def process_datadict_to_datasets(datadict, variable_selection=None):
                 data = data.set_coords(["model", "scenario", "timeperiod"])
                 datalist.append(data)
     return xr.combine_by_coords(datalist)
-                
+         
 
 def datatree_to_dataset_dict(data_tree, group_selection):
     """
