@@ -19,13 +19,9 @@ Installation
 ------------
 Please use the conda environment provided in "xarray-compacts.yml".
 In this environment, the library can be installed from github using pip:
-Download from the respeve GitHub repostory with git@github.com:acclimate/post-processing.git. 
-    Switch to the develop branch 
-
-        git checkout develop
-    
+Download from the respeve GitHub repostory with git@github.com:acclimate/post-processing.git.
 and install the package with 
 
-        conda develop . 
+        pip install -e . 
 
-from within the repository
+from within the repository to keep it up-to-date with the current state of the git repo.
