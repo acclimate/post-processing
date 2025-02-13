@@ -6,9 +6,9 @@ import glob
 from postproc_acclimate import definitions
 
 
-def load_and_process_files(ensembledir, pattern, group_to_load=None, group_variables=None, filetype="*.nc"):
+def load_ensemble_files(ensembledir, pattern, group_to_load=None, group_variables=None, filetype="*.nc", recursive=False):
     """
-    Load and process NetCDF files from a directory based on a regex pattern.
+    Load NetCDF files from a directory based on a regex pattern.
     This function loads NetCDF files from a specified directory that match a given regex pattern,
     processes the files to extract parameters from their filenames, adding these as dimensions to the data
     , and returns a list of xarray objects for combination.
@@ -25,6 +25,8 @@ def load_and_process_files(ensembledir, pattern, group_to_load=None, group_varia
         The variables within the group to load. If None, all variables are loaded.
     filetype : str, optional
         The file type pattern to match (default is "*.nc").
+    recursive : bool, optional
+        Whether to search directories recursively (default is False).
     
     Returns
     -------
@@ -38,7 +40,10 @@ def load_and_process_files(ensembledir, pattern, group_to_load=None, group_varia
     IndexError
         If the files list is empty.
     """
-    files = [f for f in glob.glob(os.path.join(ensembledir, filetype)) if pattern.match(os.path.basename(f))]
+    if not recursive:
+        files = [f for f in glob.glob(os.path.join(ensembledir, filetype)) if pattern.match(os.path.basename(f))]
+    else:
+        files = [f for f in glob.glob(os.path.join(ensembledir, '**', filetype), recursive=True) if pattern.match(os.path.basename(f))]
     if not files:
         raise IndexError("No files matched the given pattern.")
     
