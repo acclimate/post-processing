@@ -5,11 +5,11 @@ Acclimate post-processing
 Python library and scripts for post-processing output of the Acclimate model.
 """
 
-import versioneer
 from setuptools import find_packages, setup
-from setuptools.command.test import test as TestCommand
 
-NAME = "acclimate-post-processing"
+import versioneer
+
+NAME = "postproc_acclimate"
 SHORT_DESCRIPTION = (
     "Python library and scripts for post-processing output of the Acclimate model"
 )
@@ -32,7 +32,7 @@ CLASSIFIERS = [
     "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
 ]
-REQUIREMENTS_INSTALL = ["numpy>=1.7", "netcdf4"]
+REQUIREMENTS_INSTALL = ["numpy>=1.7", "netcdf4", 'xarray', 'pandas']
 REQUIREMENTS_DOCS = ["sphinx>=1.8", "sphinx_rtd_theme"]
 REQUIREMENTS_DEV = [
     "black",
@@ -51,7 +51,7 @@ REQUIREMENTS_EXTRAS = {
 setup(
     name=NAME,
     version=versioneer.get_version(),
-    python_requires=">3.7",
+    python_requires=">3",
     description=SHORT_DESCRIPTION,
     long_description=SHORT_DESCRIPTION,
     long_description_content_type="text/x-rst",
