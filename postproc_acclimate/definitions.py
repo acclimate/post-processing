@@ -322,7 +322,7 @@ WORLD_REGIONS = {
         "TUR",
         "USA",
     ],
-    "BRICS": ["BRA", "CHN", "IND", "RUS", "ZAF"],
+    "BRICS": ["BRA", "CHN", "IND", "RUS", "ZAF"], #TODO: update with affiliate members?
     "CHN": [
         "CN.AH",
         "CN.BJ",
@@ -430,7 +430,7 @@ WORLD_REGIONS = {
         "SAU",
         "AUS"
     ],
-    "G20_REST": [
+    "G20_REST": [ #TODO: what is this?
         "IND",
         "IDN",
         "BRA",
@@ -465,6 +465,19 @@ consumption_baskets = {"necessary": necessary, "relevant": relevant, "other": ot
 consumer_names = ["1st", "2nd", "3rd", "4th", "5th"]
 consumer_indizes = range(0, 5)
 
+consumer_index_name_dict = dict(zip(consumer_indizes, consumer_names))
+consumer_name_index_dict = dict(zip(consumer_names, consumer_indizes))
+
+long_quintiles = ["first_income_quintile", "second_income_quintile", "third_income_quintile", "fourth_income_quintile", "fifth_income_quintile"]
+short_quintiles = ["q1", "q2", "q3", "q4", "q5"]
+
+# consumption baskets definitions
+basket_names = list(consumption_baskets.keys())
+number_baskets = len(basket_names)
+indizes_baskets = range(0, number_baskets)
+consumption_baskets_name_index = dict(zip(basket_names, indizes_baskets))
+consumption_baskets_index_name = dict(zip(indizes_baskets, basket_names))
+
 sector_names = ['AGRI',
                 'FISH',
                 'MINQ',
@@ -493,21 +506,9 @@ sector_names = ['AGRI',
                 'REXI']
 sector_indizes = range(0, 26)
 
-consumer_index_name_dict = dict(zip(consumer_indizes, consumer_names))
-consumer_name_index_dict = dict(zip(consumer_names, consumer_indizes))
-
-
-def consumer_map(consumer_index):
-    return consumer_index_name_dict[consumer_index]
-
 
 producing_sectors_index_name_dict = dict(zip(sector_indizes, sector_names))
 producing_sectors_name_index_dict = dict(zip(sector_names, sector_indizes))
-
-
-def producing_sector_map(sector_index):
-    return producing_sectors_index_name_dict[sector_index]
-
 
 # colors as in previous publications
 
@@ -814,28 +815,7 @@ regions_index_name_dict = dict(zip(region_indexes, region_names))
 regions_name_index_dict = dict(zip(region_names, region_indexes))
 
 
-acclimate_regions = [
-    'AFG', 'ALB', 'DZA', 'AND', 'AGO', 'ATG', 'ARG', 'ARM', 'ABW', 'AUS', 'AUT', 'AZE', 'BHS', 'BHR', 'BGD', 'BRB',
-    'BLR', 'BEL', 'BLZ', 'BEN', 'BMU', 'BTN', 'BOL', 'BIH', 'BWA', 'BRA', 'VGB', 'BRN', 'BGR', 'BFA', 'BDI', 'KHM',
-    'CMR', 'CAN', 'CPV', 'CYM', 'CAF', 'TCD', 'CHL', 'CN.AH', 'CN.BJ', 'CN.CQ', 'CN.FJ', 'CN.GS', 'CN.GD', 'CN.GX',
-    'CN.GZ', 'CN.HA', 'CN.HB', 'CN.HL', 'CN.HE', 'CN.HU', 'CN.HN', 'CN.JS', 'CN.JX', 'CN.JL', 'CN.LN', 'CN.NM', 'CN.NX',
-    'CN.QH', 'CN.SA', 'CN.SD', 'CN.SH', 'CN.SX', 'CN.SC', 'CN.TJ', 'CN.XJ', 'CN.XZ', 'CN.YN', 'CN.ZJ', 'COL', 'COG',
-    'CRI', 'HRV', 'CUB', 'CYP', 'CZE', 'CIV', 'PRK', 'COD', 'DNK', 'DJI', 'DOM', 'ECU', 'EGY', 'SLV', 'ERI', 'EST',
-    'ETH', 'FJI', 'FIN', 'FRA', 'PYF', 'GAB', 'GMB', 'GEO', 'DEU', 'GHA', 'GRC', 'GRL', 'GTM', 'GIN', 'GUY', 'HTI',
-    'HND', 'HKG', 'HUN', 'ISL', 'IND', 'IDN', 'IRN', 'IRQ', 'IRL', 'ISR', 'ITA', 'JAM', 'JPN', 'JOR', 'KAZ', 'KEN',
-    'KWT', 'KGZ', 'LAO', 'LVA', 'LBN', 'LSO', 'LBR', 'LBY', 'LIE', 'LTU', 'LUX', 'MAC', 'MDG', 'MWI', 'MYS', 'MDV',
-    'MLI', 'MLT', 'MRT', 'MUS', 'MEX', 'MCO', 'MNG', 'MNE', 'MAR', 'MOZ', 'MMR', 'NAM', 'NPL', 'NLD', 'ANT', 'NCL',
-    'NZL', 'NIC', 'NER', 'NGA', 'NOR', 'PSE', 'OMN', 'PAK', 'PAN', 'PNG', 'PRY', 'PER', 'PHL', 'POL', 'PRT', 'QAT',
-    'KOR', 'MDA', 'ROU', 'RUS', 'RWA', 'WSM', 'SMR', 'STP', 'SAU', 'SEN', 'SRB', 'SYC', 'SLE', 'SGP', 'SVK', 'SVN',
-    'SOM', 'ZAF', 'SSD', 'ESP', 'LKA', 'SDN', 'SUR', 'SWZ', 'SWE', 'CHE', 'SYR', 'TWN', 'TJK', 'THA', 'MKD', 'TGO',
-    'TTO', 'TUN', 'TUR', 'TKM', 'UGA', 'UKR', 'ARE', 'GBR', 'TZA', 'US.AL', 'US.AK', 'US.AZ', 'US.AR', 'US.CA', 'US.CO',
-    'US.CT', 'US.DE', 'US.DC', 'US.FL', 'US.GA', 'US.HI', 'US.ID', 'US.IL', 'US.IN', 'US.IA', 'US.KS', 'US.KY', 'US.LA',
-    'US.ME', 'US.MD', 'US.MA', 'US.MI', 'US.MN', 'US.MS', 'US.MO', 'US.MT', 'US.NE', 'US.NV', 'US.NH', 'US.NJ', 'US.NM',
-    'US.NY', 'US.NC', 'US.ND', 'US.OH', 'US.OK', 'US.OR', 'US.PA', 'US.RI', 'US.SC', 'US.SD', 'US.TN', 'US.TX', 'US.UT',
-    'US.VT', 'US.VA', 'US.WA', 'US.WV', 'US.WI', 'US.WY', 'URY', 'UZB', 'VUT', 'VEN', 'VNM', 'YEM', 'ZMB', 'ZWE']
-
-
-# WORLD BANK region definitions & income groups based on 2021 data, generated with script "translate_world_bank_category_data.py"
+# WORLD BANK region definitions & income groups based on 2021 data
 
 #N.B. Venezuela (VEN) not categorized
 world_bank_income_groups = {'High income': ['ABW', 'AND', 'ARE', 'ATG', 'AUS', 'AUT', 'BEL', 'BHR', 'BHS', 'BMU', 'BRB', 'BRN', 'CAN', 'CHE', 'CHI', 'CHL', 'CUW', 'CYM', 'CYP', 'CZE', 'DEU', 'DNK', 'ESP', 'EST', 'FIN', 'FRA', 'FRO', 'GBR', 'GIB', 'GRC', 'GRL', 'GUM', 'HKG', 'HRV', 'HUN', 'IMN', 'IRL', 'ISL', 'ISR', 'ITA', 'JPN', 'KNA', 'KOR', 'KWT', 'LIE', 'LTU', 'LUX', 'LVA', 'MAC', 'MAF', 'MCO', 'MLT', 'MNP', 'NCL', 'NLD', 'NOR', 'NRU', 'NZL', 'OMN', 'PAN', 'POL', 'PRI', 'PRT', 'PYF', 'QAT', 'ROU', 'SAU', 'SGP', 'SMR', 'SVK', 'SVN', 'SWE', 'SXM', 'SYC', 'TCA', 'TTO', 'TWN', 'URY', 'USA', 'VGB', 'VIR']
@@ -861,79 +841,8 @@ world_bank_region_groups = {'Latin America & Caribbean': ['ABW', 'ARG', 'ATG', '
 
 
 
-
-def region_map(region_index):
-    return regions_index_name_dict[region_index]
-
-long_quintiles = ["first_income_quintile", "second_income_quintile", "third_income_quintile", "fourth_income_quintile", "fifth_income_quintile"]
-short_quintiles = ["q1", "q2", "q3", "q4", "q5"]
-
-consumer_names = ["1st", "2nd", "3rd", "4th", "5th"]
-consumer_indizes = range(0, 5)
-
-sector_names = ['AGRI',
-                'FISH',
-                'MINQ',
-                'FOOD',
-                'TEXL',
-                'WOOD',
-                'OILC',
-                'METL',
-                'MACH',
-                'TREQ',
-                'MANU',
-                'RECY',
-                'ELWA',
-                'CONS',
-                'REPA',
-                'WHOT',
-                'RETT',
-                'GAST',
-                'TRAN',
-                'COMM',
-                'FINC',
-                'ADMI',
-                'EDHE',
-                'HOUS',
-                'OTHE',
-                'REXI']
-sector_indizes = range(0, 26)
-
 #DOSE sectors groups
-
 dose_sector_groups = {"Agriculture":["AGRI","FISH"]
     ,"Manufacture":["FOOD","ELWA","OILC","WOOD","TEXT","METL","MACH","TREQ","MANU","CONS","MINQ","RECY"]
     ,"Services":["EDHE","TRAN","COMM","RETT","WHOT","GAST","REXI","OTHERS","FINC","HOUS","ADMI","REPA"]}
 
-
-consumer_index_name_dict = dict(zip(consumer_indizes, consumer_names))
-consumer_name_index_dict = dict(zip(consumer_names, consumer_indizes))
-
-
-def consumer_map(consumer_index):
-    return consumer_index_name_dict[consumer_index]
-
-
-producing_sectors_index_name_dict = dict(zip(sector_indizes, sector_names))
-producing_sectors_name_index_dict = dict(zip(sector_names, sector_indizes))
-
-
-def producing_sector_map(sector_index):
-    return producing_sectors_index_name_dict[sector_index]
-
-
-# helper functions for basket considerations
-
-basket_names = list(consumption_baskets.keys())
-number_baskets = len(basket_names)
-indizes_baskets = range(0, number_baskets)
-consumption_baskets_name_index = dict(zip(basket_names, indizes_baskets))
-consumption_baskets_index_name = dict(zip(indizes_baskets, basket_names))
-
-
-def basket_map(basket_index):
-    return consumption_baskets_index_name[basket_index]
-
-
-import math
-golden = (1 + math.sqrt(5)) / 2
