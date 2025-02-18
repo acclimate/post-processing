@@ -1,0 +1,12 @@
+#!/bin/bash
+#SBATCH --qos=QOS
+#SBATCH --job-name=JOBNAME
+#SBATCH --account=ACCOUNT
+#SBATCH --output=%x-%j.out
+#SBATCH --error=%x-%j.err
+#SBATCH --chdir=BASEDIR
+#SBATCH --cpus-per-task=CPUS
+#SBATCH --time=TIMELIMIT
+#SBATCH --export=ALL,OMP_PROC_BIND=FALSE
+export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
+ACCLIMATE_PATH SETTINGS_FILE
