@@ -10,5 +10,5 @@
 #SBATCH --time=0-23:59:00
 #SBATCH --export=ALL,OMP_PROC_BIND=FALSE
 export OMP_NUM_THREADS=$SLURM_CPUS_PER_TASK
-source activate xarray-compacts
+source activate compacts-simulations
 python post-processing/scripts/example_simple_postproc.py

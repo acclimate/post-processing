@@ -1,4 +1,4 @@
-name: xarray-compacts
+name: compacts-simulations
 channels:
   - conda-forge
   - defaults
