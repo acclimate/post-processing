@@ -75,10 +75,10 @@ def load_ensemble_files(ensembledir, pattern, group_to_load=None, group_variable
                 if dim not in remaining_dims:
                     dataset = dataset.drop_vars(dim)
 
-        for param in ensemble_parameters:
-            dataset[param] = parameters[param]
-            dataset[param] = dataset[param].astype(parameter_type_dict[param])
-            dataset[param].attrs['standard_name'] = param
+        for i_param in ensemble_parameters:
+            dataset[i_param] = parameters[i_param]
+            dataset[i_param] = dataset[i_param].astype(parameter_type_dict[i_param])
+            dataset[i_param].attrs['standard_name'] = i_param
         dataset = dataset.set_coords(list(parameters.keys())).expand_dims(list(parameters.keys()))
         data_to_merge.append(dataset)
         
