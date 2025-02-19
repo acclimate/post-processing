@@ -1,4 +1,4 @@
-''' Methods for data transformation of xarray ensemble data.'''
+'''Data transformation of xarray ensemble data.'''
 
 import xarray as xr
 

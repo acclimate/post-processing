@@ -1,4 +1,4 @@
-""""Methods for calculation of summary metrics on xarray ensemble data.
+'''Calculation of summary metrics on xarray ensemble data.
 
 This script provides functions to aggregate xarray data by specified dimensions using dictionaries of keys. The main functions implemented are:
 1. `aggregate_by_dimension_dict`: Aggregates data by a given dimension using a dictionary of keys. This function selects data based on the provided dictionary, sums the data along the specified dimension, and assigns new coordinates based on the dictionary keys.
@@ -9,9 +9,8 @@ For more advanced operations and native methods in xarray, refer to the followin
 - [xarray apply_ufunc](https://xarray.pydata.org/en/stable/generated/xarray.apply_ufunc.html): Apply a function to xarray objects using numpy-like broadcasting and parallelized operations.
 - [xarray map_blocks](https://xarray.pydata.org/en/stable/generated/xarray.map_blocks.html): Apply a function to each block of a DataArray or Dataset, enabling parallel processing and handling of larger-than-memory datasets.
 
+'''
 
-
-"""
 import xarray as xr
 import toolbox_acclimate.datatransform as datatransform
     

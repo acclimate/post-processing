@@ -1,3 +1,4 @@
+'''Basic plotting methods'''
 # TODO less specific, maybe more generic plots. 
 # TODO: most used "normal" acclimate plots, i.e. timeseries, boxplots, etc. 
 
@@ -52,6 +53,24 @@ plot_colors_list = [matplotlib.colors.to_hex(i_color) for i_color in plot_colors
 # potentially with confidence intervals
 
 def plot_timeseries(data, variable, color = plot_colors[0], lower_confidence_interval = None, upper_confidence_interval = None, title=None, ylabel=None, xlabel=None, figsize=(12, 6)):
+    def plot_timeseries(data, variable, color=plot_colors[0], lower_confidence_interval=None, upper_confidence_interval=None, title=None, ylabel=None, xlabel=None, figsize=(12, 6)):
+        """
+        Plot a time series with optional confidence intervals.
+
+        Parameters:
+        data (DataFrame): The data containing the time series.
+        variable (str): The column name of the variable to plot.
+        color (str, optional): The color of the plot line. Defaults to plot_colors[0].
+        lower_confidence_interval (array-like, optional): The lower bound of the confidence interval. Defaults to None.
+        upper_confidence_interval (array-like, optional): The upper bound of the confidence interval. Defaults to None.
+        title (str, optional): The title of the plot. Defaults to None.
+        ylabel (str, optional): The label for the y-axis. Defaults to None.
+        xlabel (str, optional): The label for the x-axis. Defaults to None.
+        figsize (tuple, optional): The size of the figure. Defaults to (12, 6).
+
+        Returns:
+        tuple: A tuple containing the figure and axis objects.
+        """
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
     data[variable].plot(ax=ax,color=color)

@@ -15,7 +15,7 @@ from shapely.ops import transform
 from shapely.geometry import Point
 from shapely import affinity
 
-from postproc_acclimate.definitions import region_names
+from toolbox_acclimate.definitions import region_names
 
 
 def create_colormap(name, colors, alphas=None, xs=None):

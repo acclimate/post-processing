@@ -1,4 +1,4 @@
-''' Methods for data combination of gridded ensemble data using xarray.'''
+'''Data combination of gridded ensemble data using xarray.'''
 import os
 import xarray as xr
 import glob

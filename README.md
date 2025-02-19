@@ -16,7 +16,7 @@ Please use the conda environment provided in ``compacts-simulations.yml``.
 
 
 In this environment, the library can be installed from GitHub using pip:
-Download from the respective GitHub repository with ``git@github.com:acclimate/toolbox.git`` and install the package with:
+Download from the respective GitHub repository with ``git clone https://github.com/acclimate/post-processing`` and install the package with:
 
 .. code-block:: bash
 

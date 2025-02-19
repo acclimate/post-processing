@@ -1,7 +1,7 @@
-postproc_acclimate
+toolbox_acclimate
 ==================
 
 .. toctree::
    :maxdepth: 4
 
-   postproc_acclimate
+   toolbox_acclimate
