@@ -1,8 +1,6 @@
 # TODO less specific, maybe more generic plots. 
 # TODO: most used "normal" acclimate plots, i.e. timeseries, boxplots, etc. 
 
-import xarray as xr
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 

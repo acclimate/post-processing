@@ -52,8 +52,8 @@ def get_config() -> VersioneerConfig:
     cfg.VCS = "git"
     cfg.style = "pep440"
     cfg.tag_prefix = "v"
-    cfg.parentdir_prefix = "postproc_acclimate-"
-    cfg.versionfile_source = "postproc_acclimate/_version.py"
+    cfg.parentdir_prefix = "toolbox_acclimate-"
+    cfg.versionfile_source = "toolbox_acclimate/_version.py"
     cfg.verbose = False
     return cfg
 

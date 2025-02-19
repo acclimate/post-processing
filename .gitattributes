@@ -5,4 +5,4 @@ docs/* linguist-documentation
 .gitattributes export-ignore
 .gitignore export-ignore
 .readthedocs.yml export-ignore
-postproc_acclimate/_version.py export-subst
+toolbox_acclimate/_version.py export-subst

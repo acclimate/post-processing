@@ -12,13 +12,13 @@ import os
 import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-sys.path.append(os.path.join(os.path.dirname(__file__), "../postproc_acclimate"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../toolbox_acclimate"))
 from _version import get_versions  # isort:skip # append path before
 
 
 # -- Project information -----------------------------------------------------
 
-project = "postproc_acclimate"
+project = "toolbox_acclimate"
 copyright = "2025"
 author = "Acclimate Team"
 version = get_versions()["version"]  # The short X.Y version
@@ -71,7 +71,7 @@ html_static_path = ["static"]
 html_context = {
     "display_github": False,
     "github_user": "acclimate",
-    "github_repo": "post-processing",
+    "github_repo": "toolbox-acclimate",
     "github_version": "master",
     "conf_py_path": "/docs/",
 }
@@ -79,7 +79,7 @@ html_context = {
 
 # -- Options for HTMLHelp output ---------------------------------------------
 
-htmlhelp_basename = "AcclimatePostProcessingdoc"
+htmlhelp_basename = "toolbox-acclimate-doc"
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -91,8 +91,8 @@ latex_elements = {}
 latex_documents = [
     (
         master_doc,
-        "AcclimatePostProcessing.tex",
-        "Acclimate post-processing -- documentation",
+        "toolbox-acclimate.tex",
+        "toolbox-acclimate -- documentation",
         author,
         "manual",
     )
@@ -103,7 +103,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [(master_doc, "acclimate", "Acclimate post-processing - documentation", [author], 1)]
+man_pages = [(master_doc, "acclimate", "toolbox-acclimate - documentation", [author], 1)]
 
 
 # -- Options for Texinfo output ----------------------------------------------
@@ -114,11 +114,11 @@ man_pages = [(master_doc, "acclimate", "Acclimate post-processing - documentatio
 texinfo_documents = [
     (
         master_doc,
-        "AcclimatePostProcessing",
-        "Acclimate post-processing - documentation",
+        "toolbox-acclimate",
+        "toolbox-acclimate - documentation",
         author,
-        "AcclimatePostProcessing",
-        "Python library and scripts for post-processing output of the Acclimate model.",
+        "toolbox-acclimate",
+        "Python library and scripts for simulations and post-processing output of the Acclimate model.",
         "Miscellaneous",
     )
 ]

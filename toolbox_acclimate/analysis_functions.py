@@ -13,7 +13,7 @@ For more advanced operations and native methods in xarray, refer to the followin
 
 """
 import xarray as xr
-import postproc_acclimate.data_transform as datatransform
+import toolbox_acclimate.datatransform as datatransform
     
 def aggregate_by_dimension_dict(data,dimension,dict,new_dimension_name=None):
     """

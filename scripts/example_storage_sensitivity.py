@@ -23,11 +23,11 @@ import tqdm
 import xarray as xr
 from dask.diagnostics import ProgressBar
 
-import postproc_acclimate.helpers as helpers
-import postproc_acclimate.definitions as defs
-import postproc_acclimate.ensemble_data_combination as edc
-import postproc_acclimate.analysis_functions as analysis
-import postproc_acclimate.data_transform as datatransform
+import toolbox_acclimate.helpers as helpers
+import toolbox_acclimate.definitions as defs
+import toolbox_acclimate.ensemble_data_combination as edc
+import toolbox_acclimate.analysis_functions as analysis
+import toolbox_acclimate.datatransform as datatransform
 
 # Define directories and identifiers
 identifier = "ensemble_storage_forcing_amplitude"

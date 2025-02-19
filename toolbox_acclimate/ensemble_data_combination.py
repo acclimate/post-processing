@@ -3,7 +3,7 @@ import os
 import xarray as xr
 import glob
 
-from postproc_acclimate import definitions
+from toolbox_acclimate import definitions
 
 
 def load_ensemble_files(ensembledir, pattern, group_to_load=None, group_variables=None, filetype="*.nc", recursive=False):

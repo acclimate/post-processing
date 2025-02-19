@@ -1,4 +1,4 @@
-Welcome to the postproc_acclimate documentation!
+Welcome to the toolbox_acclimate documentation!
 ===================================================
 
 .. include:: ../README.md

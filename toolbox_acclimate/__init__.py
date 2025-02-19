@@ -1,5 +1,5 @@
 """
-Acclimate post-processing
+toolbox-acclimate
 """
 from ._version import get_versions
 __version__: str = get_versions()["version"]

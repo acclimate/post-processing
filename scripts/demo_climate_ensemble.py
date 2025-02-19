@@ -2,7 +2,7 @@
 '''
 import xarray as xr
 import re
-import postproc_acclimate.ensemble_data_combination as edc
+import toolbox_acclimate.ensemble_data_combination as edc
 
 basedir = '/p/projects/isimip/isimip/ISIMIP3b/InputData/climate/atmosphere/bias-adjusted/global/daily'
 
