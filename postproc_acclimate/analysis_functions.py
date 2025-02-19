@@ -66,9 +66,10 @@ def get_baseline_and_aggregates(data,baseline_date,dimension,dict,new_dimension_
     tuple
         Tuple with baseline aggregates and aggregates for each key in dict.
     """
-    baseline_data = datatransform.get_baseline_data(data,baseline_date,dimension=baseline_dimension_name)
-    baseline_aggregates = aggregate_by_dimension_dict(baseline_data,dimension,dict,new_dimension_name)
+
     aggregates = aggregate_by_dimension_dict(data,dimension,dict,new_dimension_name)
-    return baseline_aggregates, aggregates
+    baseline_aggregate = datatransform.get_baseline_data(aggregates,baseline_date,dimension=baseline_dimension_name)
+    
+    return baseline_aggregate, aggregates
 
 

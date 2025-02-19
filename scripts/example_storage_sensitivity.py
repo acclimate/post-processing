@@ -22,7 +22,6 @@ import dask
 import tqdm
 import xarray as xr
 from dask.diagnostics import ProgressBar
-from dask.distributed import Client
 
 import postproc_acclimate.helpers as helpers
 import postproc_acclimate.definitions as defs
@@ -35,6 +34,7 @@ identifier = "ensemble_storage_forcing_amplitude"
 basedir = "/p/projects/acclimate/projects/storage-sensitivity"
 ensembledir = os.path.join(basedir, "runs")
 analysisdir = os.path.join(basedir, "analysis")
+
 if not os.path.exists(analysisdir):
     os.makedirs(analysisdir)
 
@@ -136,7 +136,7 @@ with tqdm.tqdm(total=3, desc="Loading results from NetCDF files", leave=True, fi
     baseline_aggregates = xr.open_dataset(os.path.join(analysisdir, f"{identifier}_firms_baseline_aggregates_regions.nc"), chunks='auto')
     aggregates = xr.open_dataset(os.path.join(analysisdir, f"{identifier}_firms_aggregates_regions.nc"),chunks='auto')
 
-# Save to CSVgates = xr.open_dataset(os.path.join(analysisdir, f"{identifier}_firms_baseline_aggregates_regions.nc"),chunks='auto')
+# Save to CSV
 with tqdm.tqdm(total=1, desc="Saving medians to csv", leave=True, file=sys.stdout) as pbar:
     medians.to_dataframe().to_csv(os.path.join(analysisdir, f"{identifier}_firms_medians.csv"))
     pbar.update(1)

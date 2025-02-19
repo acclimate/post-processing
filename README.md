@@ -19,7 +19,14 @@ As demonstrated in ``scripts/example_simple_postproc.py``, capabilities for ense
 Installation
 ------------
 
-Please use the conda environment provided in ``xarray-compacts.yml``. In this environment, the library can be installed from GitHub using pip:
+Please use the conda environment provided in ``compacts-simulations.yml``. 
+
+.. code-block:: bash
+
+        conda env update -n compacts-simulations --file compacts-simulations.yml
+
+
+In this environment, the library can be installed from GitHub using pip:
 Download from the respective GitHub repository with ``git@github.com:acclimate/post-processing.git`` and install the package with:
 
 .. code-block:: bash

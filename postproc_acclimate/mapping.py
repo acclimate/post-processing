@@ -15,7 +15,7 @@ from shapely.ops import transform
 from shapely.geometry import Point
 from shapely import affinity
 
-from postproc_acclimate.definitions import acclimate_regions
+from postproc_acclimate.definitions import region_names
 
 
 def create_colormap(name, colors, alphas=None, xs=None):
@@ -182,7 +182,7 @@ def make_map(
     for r, (level, subregions, patch) in patches.items():
         # if len(subregions) == 1 and r not in validpatches and r not in invpatches:
         if r not in validpatches and r not in invpatches:
-            if r in acclimate_regions and r not in silently_exclude_regions:
+            if r in region_names and r not in silently_exclude_regions:
                 invpatches[r] = patch
                 print('No data passed for region {}'.format(r))
             elif r in exclude_regions and r not in silently_exclude_regions:
